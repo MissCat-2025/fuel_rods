@@ -4,7 +4,7 @@
 #   mpirun -n 10 ../../fuel_rods-opt -i step1_to_generate_e.i --mesh-only Oconee_Rod_15309.e
 #《《下面数据取自[1]邓超群, 向烽瑞, 贺亚男, 等. 基于MOOSE平台的棒状燃料元件性能分析程序开发与验证[J]. 原子能科学技术, 2021, 55(7): 1296-1303.》》
 l=0.005#相场断裂尺度参数
-x = '${fparse l/3}' #网格尺寸
+x = '${fparse l/5}' #网格尺寸
 
 
 
