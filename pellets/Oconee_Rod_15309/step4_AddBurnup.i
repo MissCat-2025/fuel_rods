@@ -7,7 +7,7 @@ pellet_elastic_constants=2.2e11#Pa
 pellet_nu = 0.345
 pellet_specific_heat=300
 pellet_thermal_conductivity = 5
-pellet_thermal_expansion_coef=1e-5#K-1
+# 总热线膨胀经验公式代替pellet_thermal_expansion_coef=1e-5#K-1
 
 clad_density=6.59e3#kg⋅m-3
 clad_elastic_constants=7.52e10#Pa
@@ -162,9 +162,9 @@ clad_thermal_expansion_coef=5.0e-6#K-1
       variable = T
     []
     [Fheat_source]
-      type = HeatSource
+      type = ADMatHeatSource
       variable = T
-      function = power_history
+      material_property = total_power
       block = pellet
     []
 []
@@ -242,20 +242,33 @@ clad_thermal_expansion_coef=5.0e-6#K-1
       prop_values = '${pellet_density} ${pellet_specific_heat} ${pellet_thermal_conductivity}'
       block = pellet
     []
+    # 然后定义总功率材料
+    [total_power]
+      type = ADTotalPowerMaterial
+      power_history = power_history
+      burnup = burnup  # 使用上面定义的燃耗
+      p1 = 1.2
+      p2 = 500.0
+      p3 = 0.75
+      pellet_radius = 0.0046609
+      block = pellet
+    []
     #定义燃耗（可以是常数或变量）
     [burnup]
       type = ADBurnupMaterial
-      power_density = power_history  # 使用定义的功率历史函数
+      total_power = total_power
       initial_density = ${pellet_density}
       block = pellet
     []
+
     #特征应变的加入
+
     [pellet_thermal_eigenstrain]
-      type = ADComputeThermalExpansionEigenstrain
-      eigenstrain_name = thermal_eigenstrain
-      stress_free_temperature = 500
-      thermal_expansion_coeff = ${pellet_thermal_expansion_coef}
-      temperature = T
+      type = ADComputeDilatationThermalExpansionFunctionEigenstrain
+      dilatation_function = ThermalExpansionFunction    # 使用上面定义的函数
+      stress_free_temperature = 500        # 参考温度
+      temperature = T                         # 温度变量
+      eigenstrain_name = thermal_eigenstrain  # 改用统一的命名
       block = pellet
     []
         # 肿胀应变函数
@@ -280,12 +293,12 @@ clad_thermal_expansion_coef=5.0e-6#K-1
       property_name = densification_coef
       coupled_variables = 'T'
       material_property_names = 'CD_factor burnup'
-      expression = '0.04 * (exp(-4.605 * burnup / (CD_factor * 0.006024)) - 1)/3'# 0.6024是5000MWd/tU的转换系数
+      expression = '0.01 * (exp(-4.605 * burnup / (CD_factor * 0.006024)) - 1)/3'# 0.6024是5000MWd/tU的转换系数
       block = pellet
     []
         # 肿胀应变计算
     [swelling_eigenstrain]
-      type = ADComputeVariableEigenstrain
+      type = ADComputeVariableFunctionEigenstrain
       eigen_base = '1 1 1 0 0 0'
       prefactor = swelling_coef
       eigenstrain_name = swelling_eigenstrain
@@ -294,7 +307,7 @@ clad_thermal_expansion_coef=5.0e-6#K-1
 
     # 密实化应变计算
     [densification_eigenstrain]
-      type = ADComputeVariableEigenstrain
+      type = ADComputeVariableFunctionEigenstrain
       eigen_base = '1 1 1 0 0 0'
       prefactor = densification_coef
       eigenstrain_name = densification_eigenstrain
@@ -356,9 +369,9 @@ clad_thermal_expansion_coef=5.0e-6#K-1
     variable = T
     primary = clad_inner
     secondary = pellet_outer
-    emissivity_primary =1
-    emissivity_secondary =1
-    gap_conductivity = 51
+    emissivity_primary =0.8
+    emissivity_secondary =0.8
+    gap_conductivity = 0.1
     quadrature = true
     gap_geometry_type = CYLINDER
     cylinder_axis_point_1 = '0 0 0'
@@ -366,16 +379,25 @@ clad_thermal_expansion_coef=5.0e-6#K-1
   [../]
 []
 [Functions]
-[gap_pressure]
-  type = ParsedFunction
-  expression = '1+5*t/86400'
-[]
-[power_history]
-  type = PiecewiseLinear
-  data_file = power_history.csv    # 创建一个包含上述数据的CSV文件，数据为<s,w/m>
-  format = columns                 # 指定数据格式为列式
-  scale_factor = 1.1166e7         # 保持原有的转换因子
-[]
+  [gap_pressure]
+    type = ParsedFunction
+    expression = '1+5*t/6.912e7'
+  []
+  #功率相关
+  # 功率历史函数
+  [power_history]
+    type = PiecewiseLinear
+    data_file = power_history.csv    # 创建一个包含上述数据的CSV文件，数据为<s,w/m>
+    format = columns                 # 指定数据格式为列式
+    scale_factor = 1.1166e7         # 保持原有的转换因子
+  []
+  
+  [ThermalExpansionFunction]
+    type = ParsedFunction
+    # 这个函数直接给出总的膨胀量
+    expression = '(-4.972e-4 + 7.107e-6*t + 2.581e-9*t*t + 1.14e-13*t*t*t)'
+    # 这里的't'是Function的自变量，会被传入温度值
+  []
 []
 [Executioner]
     type = Transient
@@ -383,8 +405,8 @@ clad_thermal_expansion_coef=5.0e-6#K-1
     petsc_options_iname = '-pc_type -pc_hypre_type'
     petsc_options_value = 'hypre boomeramg'
     dtmin = 3600
-    dtmax = 864000
-    end_time =6.912e79
+    dtmax = 43200
+    end_time =6.912e7
     automatic_scaling = true # 启用自动缩放功能，有助于改善病态问题的收敛性
     compute_scaling_once = true  # 每个时间步都重新计算缩放
     nl_max_its = 5
@@ -396,7 +418,7 @@ clad_thermal_expansion_coef=5.0e-6#K-1
     [TimeStepper]
       type = IterationAdaptiveDT
       dt = 3600
-      growth_factor = 2  # 时间步长增长因子
+      growth_factor = 1.2  # 时间步长增长因子
       cutback_factor = 0.5 # 时间步长缩减因子
       optimal_iterations = 8 # 期望的非线性迭代次数
     []

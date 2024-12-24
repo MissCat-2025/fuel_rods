@@ -11,9 +11,10 @@ public:
 
 protected:
   virtual void computeQpProperties() override;
-
-  /// 功率密度函数 (W/m³)
-  const Function & _power_density;
+  // 添加这个函数来初始化状态变量
+  virtual void initQpStatefulProperties() override;
+  /// 总功率材料属性
+  const ADMaterialProperty<Real> & _total_power;
   
   /// 时间步长
   // const Real & _dt;  // 修改为系统参数
