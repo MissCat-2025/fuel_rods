@@ -21,10 +21,6 @@ protected:
   /// 燃耗变量
   const VariableValue & _burnup;  // 改为变量，避免循环调用
   
-  /// 模型参数
-  const Real & _p1;
-  const Real & _p2;
-  const Real & _p3;
   const Real & _pellet_radius;
   
   /// 声明总功率材料属性
@@ -32,4 +28,10 @@ protected:
   
   /// 声明径向功率分布材料属性（可选，用于输出）
   ADMaterialProperty<Real> & _radial_power_shape;
+    /// 计算初期功率分布
+  Real powerFactor2(const Real & r) const;
+  
+  /// 计算末期功率分布
+  Real powerFactor1(const Real & r) const;
+  
 };

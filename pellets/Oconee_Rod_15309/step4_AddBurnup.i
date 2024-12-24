@@ -246,10 +246,7 @@ clad_thermal_expansion_coef=5.0e-6#K-1
     [total_power]
       type = ADTotalPowerMaterial
       power_history = power_history
-      burnup = burnup  # 使用上面定义的燃耗
-      p1 = 1.2
-      p2 = 500.0
-      p3 = 0.75
+      burnup = burnup
       pellet_radius = 0.0046609
       block = pellet
     []
@@ -293,7 +290,7 @@ clad_thermal_expansion_coef=5.0e-6#K-1
       property_name = densification_coef
       coupled_variables = 'T'
       material_property_names = 'CD_factor burnup'
-      expression = '0.01 * (exp(-4.605 * burnup / (CD_factor * 0.006024)) - 1)/3'# 0.6024是5000MWd/tU的转换系数
+      expression = '0.025 * (exp(-4.605 * burnup / (CD_factor * 0.006024)) - 1)/3'# 0.6024是5000MWd/tU的转换系数
       block = pellet
     []
         # 肿胀应变计算
@@ -405,7 +402,7 @@ clad_thermal_expansion_coef=5.0e-6#K-1
     petsc_options_iname = '-pc_type -pc_hypre_type'
     petsc_options_value = 'hypre boomeramg'
     dtmin = 3600
-    dtmax = 43200
+    dtmax = 864000
     end_time =6.912e7
     automatic_scaling = true # 启用自动缩放功能，有助于改善病态问题的收敛性
     compute_scaling_once = true  # 每个时间步都重新计算缩放
@@ -418,7 +415,7 @@ clad_thermal_expansion_coef=5.0e-6#K-1
     [TimeStepper]
       type = IterationAdaptiveDT
       dt = 3600
-      growth_factor = 1.2  # 时间步长增长因子
+      growth_factor = 2  # 时间步长增长因子
       cutback_factor = 0.5 # 时间步长缩减因子
       optimal_iterations = 8 # 期望的非线性迭代次数
     []
