@@ -1,5 +1,5 @@
 #这一步的目的是计算燃料棒的应力分布
-#这一步加入中子相关的参数，包括燃耗，辐照密实化应变，肿胀应变
+#这一步[Materials]中二氧化铀芯块的热导率，热容等使用与温度相关的经验公式
 #功率函数逐渐接近真实的功率时间函数
 
 pellet_density=10431.0#10431.0*0.85#kg⋅m-3
@@ -162,9 +162,9 @@ clad_thermal_expansion_coef=5.0e-6#K-1
       variable = T
     []
     [Fheat_source]
-      type = HeatSource
+      type = ADMatHeatSource
       variable = T
-      function = power_history
+      material_property = total_power
       block = pellet
     []
 []
@@ -242,10 +242,18 @@ clad_thermal_expansion_coef=5.0e-6#K-1
       prop_values = '${pellet_density}'
       block = pellet
     []
+    # 然后定义总功率材料
+    [total_power]
+      type = ADTotalPowerMaterial
+      power_history = power_history
+      burnup = burnup
+      pellet_radius = 0.0046609
+      block = pellet
+    []
     #定义燃耗（可以是常数或变量）
     [burnup]
       type = ADBurnupMaterial
-      power_density = power_history  # 使用定义的功率历史函数
+      total_power = total_power
       initial_density = ${pellet_density}
       block = pellet
     []
@@ -264,14 +272,16 @@ clad_thermal_expansion_coef=5.0e-6#K-1
     expression = '52.1743 + 87.951*T/1000 - 84.2411*(T/1000)^2 + 31.542*(T/1000)^3 - 2.6334*(T/1000)^4 - 0.71391*(T/1000)^(-2)'
     block = pellet
   []
-  [pellet_thermal_eigenstrain]
-    type = ADComputeDilatationThermalExpansionFunctionEigenstrain
-    dilatation_function = thermal_expansion_coef    # 使用上面定义的函数
-    stress_free_temperature = 598.15        # 参考温度
-    temperature = T                         # 温度变量
-    eigenstrain_name = thermal_eigenstrain  # 改用统一的命名
-    block = pellet
-  []
+    #特征应变的加入
+    #热应变
+    [pellet_thermal_eigenstrain]
+      type = ADComputeDilatationThermalExpansionFunctionEigenstrain
+      dilatation_function = ThermalExpansionFunction    # 使用上面定义的函数
+      stress_free_temperature = 500        # 参考温度
+      temperature = T                         # 温度变量
+      eigenstrain_name = thermal_eigenstrain  # 改用统一的命名
+      block = pellet
+    []
         # 肿胀应变函数
     [swelling_coef]
       type = ADDerivativeParsedMaterial  # 改为ADParsedMaterial
@@ -299,7 +309,7 @@ clad_thermal_expansion_coef=5.0e-6#K-1
     []
         # 肿胀应变计算
     [swelling_eigenstrain]
-      type = ADComputeVariableEigenstrain
+      type = ADComputeVariableFunctionEigenstrain
       eigen_base = '1 1 1 0 0 0'
       prefactor = swelling_coef
       eigenstrain_name = swelling_eigenstrain
@@ -308,7 +318,7 @@ clad_thermal_expansion_coef=5.0e-6#K-1
 
     # 密实化应变计算
     [densification_eigenstrain]
-      type = ADComputeVariableEigenstrain
+      type = ADComputeVariableFunctionEigenstrain
       eigen_base = '1 1 1 0 0 0'
       prefactor = densification_coef
       eigenstrain_name = densification_eigenstrain
@@ -370,9 +380,9 @@ clad_thermal_expansion_coef=5.0e-6#K-1
     variable = T
     primary = clad_inner
     secondary = pellet_outer
-    emissivity_primary =1
-    emissivity_secondary =1
-    gap_conductivity = 0.5
+    emissivity_primary =0.8
+    emissivity_secondary =0.8
+    gap_conductivity = 0.2
     quadrature = true
     gap_geometry_type = CYLINDER
     cylinder_axis_point_1 = '0 0 0'
@@ -382,7 +392,7 @@ clad_thermal_expansion_coef=5.0e-6#K-1
 [Functions]
   [gap_pressure]
     type = ParsedFunction
-    expression = '1+5*t/66059171'
+    expression = '1+5*t/6.912e7'
   []
   [power_history]
     type = PiecewiseLinear
@@ -390,35 +400,35 @@ clad_thermal_expansion_coef=5.0e-6#K-1
     format = columns                 # 指定数据格式为列式
     scale_factor = 1.1166e7         # 保持原有的转换因子
   []
-  [thermal_expansion_coef]
+  [ThermalExpansionFunction]
     type = ParsedFunction
     expression = '(-4.972e-4 + 7.107e-6*t + 2.581e-9*t*t + 1.14e-13*t*t*t)'
    []
 []
 [Executioner]
-    type = Transient
-    solve_type = 'PJFNK'
-    petsc_options_iname = '-pc_type -pc_hypre_type'
-    petsc_options_value = 'hypre boomeramg'
-    dtmin = 3600
-    dtmax = 864000
-    end_time =6.912e79
-    automatic_scaling = true # 启用自动缩放功能，有助于改善病态问题的收敛性
-    compute_scaling_once = true  # 每个时间步都重新计算缩放
-    nl_max_its = 5
-    nl_rel_tol = 5e-9 # 非线性求解的相对容差
-    nl_abs_tol = 5e-9 # 非线性求解的绝对容差
-    l_tol = 5e-8  # 线性求解的容差
-    l_max_its = 500 # 线性求解的最大迭代次数
-    accept_on_max_fixed_point_iteration = true # 达到最大迭代次数时接受解
-    [TimeStepper]
-      type = IterationAdaptiveDT
-      dt = 3600
-      growth_factor = 1.5  # 时间步长增长因子
-      cutback_factor = 0.5 # 时间步长缩减因子
-      optimal_iterations = 8 # 期望的非线性迭代次数
-    []
+  type = Transient
+  solve_type = 'PJFNK'
+  petsc_options_iname = '-pc_type -pc_hypre_type'
+  petsc_options_value = 'hypre boomeramg'
+  dtmin = 3600
+  dtmax = 864000
+  end_time =6.912e7
+  automatic_scaling = true # 启用自动缩放功能，有助于改善病态问题的收敛性
+  compute_scaling_once = true  # 每个时间步都重新计算缩放
+  nl_max_its = 5
+  nl_rel_tol = 5e-9 # 非线性求解的相对容差
+  nl_abs_tol = 5e-9 # 非线性求解的绝对容差
+  l_tol = 5e-8  # 线性求解的容差
+  l_max_its = 500 # 线性求解的最大迭代次数
+  accept_on_max_fixed_point_iteration = true # 达到最大迭代次数时接受解
+  [TimeStepper]
+    type = IterationAdaptiveDT
+    dt = 3600
+    growth_factor = 2  # 时间步长增长因子
+    cutback_factor = 0.5 # 时间步长缩减因子
+    optimal_iterations = 8 # 期望的非线性迭代次数
   []
+[]
 [Outputs]
   exodus = true
 []

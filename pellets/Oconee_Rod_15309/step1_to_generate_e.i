@@ -12,11 +12,11 @@ clad_inner_radius = '${fparse clad_inner_diameter/2*1e-3}'#直径变半径，并
 clad_outer_radius = '${fparse clad_outer_diameter/2*1e-3}'#直径变半径，并且单位变mm
 length = 17.78e-3 # 芯块长度17.78mm
 
-n_elems_axial = 5 # 轴向网格数
-n_elems_azimuthal = 20 # 周向网格数
+n_elems_axial = 2 # 轴向网格数
+n_elems_azimuthal = 50 # 周向网格数
 
 n_elems_radial_clad = 4 # 包壳径向网格数
-n_elems_radial_pellet = 15 # 芯块径向网格数
+n_elems_radial_pellet = 30 # 芯块径向网格数
 
 [Mesh]
     [pellet_clad_gap]
