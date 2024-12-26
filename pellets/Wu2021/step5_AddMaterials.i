@@ -1,11 +1,13 @@
 #这一步的目的是计算燃料棒的应力分布
-#这一步加入蠕变，蠕变与氧超化学计量UO2+x有关。
-#氧超化学计量需要多加入一个控制方程，即氧扩散方程，参考文献
-#《[1] WEI LI, KOROUSH SHIRVAN. Multiphysics phase-field modeling of quasi-static cracking in urania ceramic nuclear fuel[J/OL]. Ceramics International, 2021, 47(1): 793-810. DOI:10.1016/j.ceramint.2020.08.191.》
+#这一步[Materials]中二氧化铀芯块的热导率，热容等使用与温度相关的经验公式
+#功率函数逐渐接近真实的功率时间函数
 
 pellet_density=10431.0#10431.0*0.85#kg⋅m-3
 pellet_elastic_constants=2.2e11#Pa
 pellet_nu = 0.345
+# pellet_specific_heat=300
+# pellet_thermal_conductivity = 5
+# pellet_thermal_expansion_coef=1e-5#K-1
 
 clad_density=6.59e3#kg⋅m-3
 clad_elastic_constants=7.52e10#Pa
@@ -39,10 +41,6 @@ clad_thermal_expansion_coef=5.0e-6#K-1
   [../]
   # 肿胀应变
   [./swelling_hoop_strain]
-    order = CONSTANT
-    family = MONOMIAL
-  [../]
-  [./creep_hoop_strain]
     order = CONSTANT
     family = MONOMIAL
   [../]
@@ -108,15 +106,6 @@ clad_thermal_expansion_coef=5.0e-6#K-1
     execute_on = 'TIMESTEP_END'
     block = pellet
   [../]
-  [./creep_strain]
-    type = ADRankTwoAux
-    variable = creep_hoop_strain
-    rank_two_tensor = creep_eigenstrain
-    index_i = 2
-    index_j = 2  # zz分量对应环向
-    execute_on = 'TIMESTEP_END'
-    block = pellet
-  [../]
   [./total_strain]
     type = ADRankTwoScalarAux
     variable = total_hoop_strain
@@ -145,10 +134,6 @@ clad_thermal_expansion_coef=5.0e-6#K-1
     []
     [T]
       initial_condition = 500
-    []
-    [x]
-    initial_condition =0.01
-    block = pellet
     []
 []
 [Kernels]
@@ -182,19 +167,6 @@ clad_thermal_expansion_coef=5.0e-6#K-1
       material_property = total_power
       block = pellet
     []
-    #氧扩散方程
-  #化学平衡方程
-  [time_derivative]
-    type = ADTimeDerivative
-    variable = x
-    block = pellet
-  []
-  [complex_diffusion]
-    type = ADComplexDiffusionKernel  # 需要实现这个自定义kernel
-    variable = x
-    temperature = T
-    block = pellet
-  []
 []
 [BCs]
   #固定平面
@@ -260,13 +232,6 @@ clad_thermal_expansion_coef=5.0e-6#K-1
     variable = T
     boundary = clad_outer
     value = 500
-  []
-  #氧浓度边界条件
-  [x_dirichlet_bc]
-    type = DirichletBC
-    variable = x
-    boundary = pellet_outer
-    value = 0.01
   []
 []
 [Materials]
@@ -359,26 +324,9 @@ clad_thermal_expansion_coef=5.0e-6#K-1
       eigenstrain_name = densification_eigenstrain
       block = pellet
     [../]
-  # 蠕变相关
-  [creep_rate]
-    type = UO2CreepRate
-    temperature = T
-    oxygen_ratio = x
-    fission_rate = 5e19
-    theoretical_density = 95.0
-    grain_size = 20.0
-    block = pellet
-  []
-    # 蠕变特征应变
-    [creep_eigenstrain]
-      type = ADComputeUO2CreepEigenstrain
-      eigenstrain_name = creep_eigenstrain
-      block = pellet
-    []
-
     [pellet_strain]
         type = ADComputeSmallStrain 
-        eigenstrain_names = 'thermal_eigenstrain swelling_eigenstrain densification_eigenstrain creep_eigenstrain'
+        eigenstrain_names = 'thermal_eigenstrain swelling_eigenstrain densification_eigenstrain'
         output_properties = '_total_strain'
         outputs = exodus
         block = pellet
@@ -460,19 +408,18 @@ clad_thermal_expansion_coef=5.0e-6#K-1
 [Executioner]
   type = Transient
   solve_type = 'PJFNK'
-  # petsc_options_iname = '-pc_type -pc_hypre_type -ksp_gmres_restart'
-  # petsc_options_value = 'hypre boomeramg 200'
-  petsc_options_iname = '-ksp_gmres_restart -pc_type -pc_hypre_type -pc_hypre_boomeramg_max_iter'
-  petsc_options_value = '201                hypre    boomeramg     8'
-  dtmax = 43200
+  petsc_options_iname = '-pc_type -pc_hypre_type'
+  petsc_options_value = 'hypre boomeramg'
+  dtmin = 3600
+  dtmax = 864000
   end_time =6.912e7
   automatic_scaling = true # 启用自动缩放功能，有助于改善病态问题的收敛性
   compute_scaling_once = true  # 每个时间步都重新计算缩放
-  nl_max_its = 10
-  nl_rel_tol = 5e-7 # 非线性求解的相对容差
-  nl_abs_tol = 5e-8 # 非线性求解的绝对容差
+  nl_max_its = 5
+  nl_rel_tol = 5e-9 # 非线性求解的相对容差
+  nl_abs_tol = 5e-9 # 非线性求解的绝对容差
   l_tol = 5e-8  # 线性求解的容差
-  l_max_its = 50 # 线性求解的最大迭代次数
+  l_max_its = 500 # 线性求解的最大迭代次数
   accept_on_max_fixed_point_iteration = true # 达到最大迭代次数时接受解
   [TimeStepper]
     type = IterationAdaptiveDT

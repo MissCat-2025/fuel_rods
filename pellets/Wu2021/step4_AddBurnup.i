@@ -1,11 +1,13 @@
 #这一步的目的是计算燃料棒的应力分布
-#这一步加入蠕变，蠕变与氧超化学计量UO2+x有关。
-#氧超化学计量需要多加入一个控制方程，即氧扩散方程，参考文献
-#《[1] WEI LI, KOROUSH SHIRVAN. Multiphysics phase-field modeling of quasi-static cracking in urania ceramic nuclear fuel[J/OL]. Ceramics International, 2021, 47(1): 793-810. DOI:10.1016/j.ceramint.2020.08.191.》
+#这一步加入中子相关的参数，包括燃耗，辐照密实化应变，肿胀应变
+#功率函数逐渐接近真实的功率时间函数，包括功率分布也拟合了一个真实的功率分布
 
 pellet_density=10431.0#10431.0*0.85#kg⋅m-3
 pellet_elastic_constants=2.2e11#Pa
 pellet_nu = 0.345
+pellet_specific_heat=300
+pellet_thermal_conductivity = 5
+# 总热线膨胀经验公式代替pellet_thermal_expansion_coef=1e-5#K-1
 
 clad_density=6.59e3#kg⋅m-3
 clad_elastic_constants=7.52e10#Pa
@@ -39,10 +41,6 @@ clad_thermal_expansion_coef=5.0e-6#K-1
   [../]
   # 肿胀应变
   [./swelling_hoop_strain]
-    order = CONSTANT
-    family = MONOMIAL
-  [../]
-  [./creep_hoop_strain]
     order = CONSTANT
     family = MONOMIAL
   [../]
@@ -108,15 +106,6 @@ clad_thermal_expansion_coef=5.0e-6#K-1
     execute_on = 'TIMESTEP_END'
     block = pellet
   [../]
-  [./creep_strain]
-    type = ADRankTwoAux
-    variable = creep_hoop_strain
-    rank_two_tensor = creep_eigenstrain
-    index_i = 2
-    index_j = 2  # zz分量对应环向
-    execute_on = 'TIMESTEP_END'
-    block = pellet
-  [../]
   [./total_strain]
     type = ADRankTwoScalarAux
     variable = total_hoop_strain
@@ -145,10 +134,6 @@ clad_thermal_expansion_coef=5.0e-6#K-1
     []
     [T]
       initial_condition = 500
-    []
-    [x]
-    initial_condition =0.01
-    block = pellet
     []
 []
 [Kernels]
@@ -182,19 +167,6 @@ clad_thermal_expansion_coef=5.0e-6#K-1
       material_property = total_power
       block = pellet
     []
-    #氧扩散方程
-  #化学平衡方程
-  [time_derivative]
-    type = ADTimeDerivative
-    variable = x
-    block = pellet
-  []
-  [complex_diffusion]
-    type = ADComplexDiffusionKernel  # 需要实现这个自定义kernel
-    variable = x
-    temperature = T
-    block = pellet
-  []
 []
 [BCs]
   #固定平面
@@ -261,20 +233,13 @@ clad_thermal_expansion_coef=5.0e-6#K-1
     boundary = clad_outer
     value = 500
   []
-  #氧浓度边界条件
-  [x_dirichlet_bc]
-    type = DirichletBC
-    variable = x
-    boundary = pellet_outer
-    value = 0.01
-  []
 []
 [Materials]
     #定义芯块热导率、密度、比热等材料属性
     [pellet_properties]
       type = ADGenericConstantMaterial
-      prop_names = 'density'
-      prop_values = '${pellet_density}'
+      prop_names = ' density specific_heat thermal_conductivity'
+      prop_values = '${pellet_density} ${pellet_specific_heat} ${pellet_thermal_conductivity}'
       block = pellet
     []
     # 然后定义总功率材料
@@ -292,21 +257,7 @@ clad_thermal_expansion_coef=5.0e-6#K-1
       initial_density = ${pellet_density}
       block = pellet
     []
-  [pellet_thermal_conductivity]
-    type = ADParsedMaterial
-    property_name = thermal_conductivity
-    coupled_variables = 'T'
-    expression = '100/(7.5408 + 17.692*T/1000 + 3.6142*(T/1000)^2) + 6400/((T/1000)^2.5)*exp(-16.35/(T/1000))'
-    block = pellet
-  []
 
-  [pellet_specific_heat]
-    type = ADParsedMaterial
-    property_name = specific_heat
-    coupled_variables = 'T'
-    expression = '52.1743 + 87.951*T/1000 - 84.2411*(T/1000)^2 + 31.542*(T/1000)^3 - 2.6334*(T/1000)^4 - 0.71391*(T/1000)^(-2)'
-    block = pellet
-  []
     #特征应变的加入
     #热应变
     [pellet_thermal_eigenstrain]
@@ -339,7 +290,7 @@ clad_thermal_expansion_coef=5.0e-6#K-1
       property_name = densification_coef
       coupled_variables = 'T'
       material_property_names = 'CD_factor burnup'
-      expression = '0.04 * (exp(-4.605 * burnup / (CD_factor * 0.006024)) - 1)/3'# 0.6024是5000MWd/tU的转换系数
+      expression = '0.025 * (exp(-4.605 * burnup / (CD_factor * 0.006024)) - 1)/3'# 0.6024是5000MWd/tU的转换系数
       block = pellet
     []
         # 肿胀应变计算
@@ -359,26 +310,9 @@ clad_thermal_expansion_coef=5.0e-6#K-1
       eigenstrain_name = densification_eigenstrain
       block = pellet
     [../]
-  # 蠕变相关
-  [creep_rate]
-    type = UO2CreepRate
-    temperature = T
-    oxygen_ratio = x
-    fission_rate = 5e19
-    theoretical_density = 95.0
-    grain_size = 20.0
-    block = pellet
-  []
-    # 蠕变特征应变
-    [creep_eigenstrain]
-      type = ADComputeUO2CreepEigenstrain
-      eigenstrain_name = creep_eigenstrain
-      block = pellet
-    []
-
     [pellet_strain]
         type = ADComputeSmallStrain 
-        eigenstrain_names = 'thermal_eigenstrain swelling_eigenstrain densification_eigenstrain creep_eigenstrain'
+        eigenstrain_names = 'thermal_eigenstrain swelling_eigenstrain densification_eigenstrain'
         output_properties = '_total_strain'
         outputs = exodus
         block = pellet
@@ -434,7 +368,7 @@ clad_thermal_expansion_coef=5.0e-6#K-1
     secondary = pellet_outer
     emissivity_primary =0.8
     emissivity_secondary =0.8
-    gap_conductivity = 0.2
+    gap_conductivity = 0.1
     quadrature = true
     gap_geometry_type = CYLINDER
     cylinder_axis_point_1 = '0 0 0'
@@ -446,42 +380,46 @@ clad_thermal_expansion_coef=5.0e-6#K-1
     type = ParsedFunction
     expression = '1+5*t/6.912e7'
   []
+  #功率相关
+  # 功率历史函数
   [power_history]
     type = PiecewiseLinear
     data_file = power_history.csv    # 创建一个包含上述数据的CSV文件，数据为<s,w/m>
     format = columns                 # 指定数据格式为列式
     scale_factor = 1.1166e7         # 保持原有的转换因子
   []
+  
   [ThermalExpansionFunction]
     type = ParsedFunction
+    # 这个函数直接给出总的膨胀量
     expression = '(-4.972e-4 + 7.107e-6*t + 2.581e-9*t*t + 1.14e-13*t*t*t)'
-   []
-[]
-[Executioner]
-  type = Transient
-  solve_type = 'PJFNK'
-  # petsc_options_iname = '-pc_type -pc_hypre_type -ksp_gmres_restart'
-  # petsc_options_value = 'hypre boomeramg 200'
-  petsc_options_iname = '-ksp_gmres_restart -pc_type -pc_hypre_type -pc_hypre_boomeramg_max_iter'
-  petsc_options_value = '201                hypre    boomeramg     8'
-  dtmax = 43200
-  end_time =6.912e7
-  automatic_scaling = true # 启用自动缩放功能，有助于改善病态问题的收敛性
-  compute_scaling_once = true  # 每个时间步都重新计算缩放
-  nl_max_its = 10
-  nl_rel_tol = 5e-7 # 非线性求解的相对容差
-  nl_abs_tol = 5e-8 # 非线性求解的绝对容差
-  l_tol = 5e-8  # 线性求解的容差
-  l_max_its = 50 # 线性求解的最大迭代次数
-  accept_on_max_fixed_point_iteration = true # 达到最大迭代次数时接受解
-  [TimeStepper]
-    type = IterationAdaptiveDT
-    dt = 3600
-    growth_factor = 2  # 时间步长增长因子
-    cutback_factor = 0.5 # 时间步长缩减因子
-    optimal_iterations = 8 # 期望的非线性迭代次数
+    # 这里的't'是Function的自变量，会被传入温度值
   []
 []
+[Executioner]
+    type = Transient
+    solve_type = 'PJFNK'
+    petsc_options_iname = '-pc_type -pc_hypre_type'
+    petsc_options_value = 'hypre boomeramg'
+    dtmin = 3600
+    dtmax = 864000
+    end_time =6.912e7
+    automatic_scaling = true # 启用自动缩放功能，有助于改善病态问题的收敛性
+    compute_scaling_once = true  # 每个时间步都重新计算缩放
+    nl_max_its = 5
+    nl_rel_tol = 5e-9 # 非线性求解的相对容差
+    nl_abs_tol = 5e-9 # 非线性求解的绝对容差
+    l_tol = 5e-8  # 线性求解的容差
+    l_max_its = 500 # 线性求解的最大迭代次数
+    accept_on_max_fixed_point_iteration = true # 达到最大迭代次数时接受解
+    [TimeStepper]
+      type = IterationAdaptiveDT
+      dt = 3600
+      growth_factor = 2  # 时间步长增长因子
+      cutback_factor = 0.5 # 时间步长缩减因子
+      optimal_iterations = 8 # 期望的非线性迭代次数
+    []
+  []
 [Outputs]
   exodus = true
 []
