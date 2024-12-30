@@ -1,4 +1,5 @@
 # 各种参数都取自[1]Multiphysics phase-field modeling of quasi-static cracking in urania ceramic nuclear fuel
+
 #几何与网格参数
 pellet_outer_radius = 4.1e-3#直径变半径，并且单位变mm
 clad_inner_radius = 4.18e-3#直径变半径，并且单位变mm
@@ -9,20 +10,23 @@ n_elems_azimuthal = 50 # 周向网格数
 n_elems_radial_clad = 4 # 包壳径向网格数
 n_elems_radial_pellet = 30 # 芯块径向网格数
 
-#材料参数
+#力平衡方程相关参数
 pellet_elastic_constants=2.2e11#Pa
 pellet_nu = 0.345
 clad_elastic_constants=7.52e10#Pa
 clad_nu = 0.33
+
 #热平衡方程相关参数
+#芯块的热物理参数
 pellet_density=10431.0#10431.0*0.85#kg⋅m-3
-pellet_specific_heat=300
-pellet_thermal_conductivity = 5
+pellet_specific_heat=300 # J/(kg·K)
+pellet_thermal_conductivity = 5 # W/(m·K)
 pellet_thermal_expansion_coef=1e-5#K-1
 
+#包壳的热物理参数
 clad_density=6.59e3#kg⋅m-3
-clad_specific_heat=264.5
-clad_thermal_conductivity = 16
+clad_specific_heat=264.5 # J/(kg·K)
+clad_thermal_conductivity = 16 # W/(m·K)
 clad_thermal_expansion_coef=5.0e-6#K-1
 
 [Mesh]
@@ -78,216 +82,276 @@ clad_thermal_expansion_coef=5.0e-6#K-1
     new_block  = 'pellet clad' # 将block1和block3分别命名为pellet和clad
   []
 []
-##step2计算了间隙gap压力对应下的应力分析，但是没有热交换
-#step3基于此，开始启动反应堆，于是热力耦合开始
-#耦合无非就是多了个热平衡方程，所以[Variables]、[Kernels]与[Materials]中需要加入热相关的参数（常数）：热传导系数，比热，密度（直接与控制方程相关）；热膨胀系数（与[Materials]中的应变相关），
-#边界条件[BCs]的变化：包壳外出现冷却剂，它既有500K的温度，也有15.5MP的压力
-#核[kernel]的变化：
-#材料[Materials]的变化：加入热相关的参数（常数）：热膨胀系数，热传导系数，比热，密度
-
-
 
 #以上是生成几何与网格
-# 以下是定义变量、控制方程、边界条件、材料属性的详细内容与解释
-# 咱们得控制方程就一个：∇·σ + f = 0  (在域Ω内)，# 边界条件：σ·n = t  (在域Ω的边界Γ上)
-# 应力与应变的关系离散化后σ = Dε  (在域Ω内)，加上应变与位移的关系离散化后ε = Bu,D是弹性矩阵.u为位移
-# 所以控制方程的离散格式最终可以化为：KU - F=0(K为刚度矩阵K=B^T*D*B，U为位移向量，F为载荷向量)，
-# 以上是原理部分，记住(B^T*D*B)U - F=0就好（具体推导我放在了代码最后面）
 
+# 》》》》》》》》》》》》》》》》》》》》》》》》》》》
+# 》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》
+#以下是定义变量、控制方程、边界条件、材料属性的详细内容与解释
+#本问题涉及两个控制方程：
+#1. 力平衡方程：∇·σ + f = 0  (在域Ω内)，没有f，只有《三个方向的ADStressDivergenceTensors》
+#   边界条件：σ·n = t  (在域Ω的边界Γ上)，《压力边界条件Pressure》
+#   应力与应变的关系：σ = D·ε弹  (在域Ω内)，《ADComputeLinearElasticStress》
+#   应变与位移的关系：ε总 = ε弹 + ε热 = B·u + εth  (εth为热应变)，《弹性应变ε：ADComputeSmallStrain》
 
-#》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》
-#》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》
-# 以下是MOOSE代码与原理的对应关系（不分顺序）
+#2. 热传导方程：ρc∂T/∂t = ∇·(k∇T) + q'''《ρcp∂T/∂t为ADHeatConductionTimeDerivative，∇·(k∇T)为ADHeatConduction，q'''为HeatSource》
+#   其中：ρ为密度，cp为比热容，k为热导率，q'''为体积热源
+#   边界条件：
+#   - 绝热边界：-k∇T·n = 0《ADNeumannBC》
+#   - 温度边界：T = T₀《DirichletBC》
+#   - 间隙传热：q = h(T₁-T₂)，h为等效导热系数《GapHeatTransfer》
+#   - 热应变εth：ADComputeThermalExpansionEigenstrain》
 
-#有限元模拟本质就是求微分方程(控制方程)
-# MOOSE将控制方程区分为变量[Variables](即U)，材料属性[Materials](即D、B)，以及变量与材料属性的组合方式[Kernels]
-# 定义控制方程[Kernels]：
-  # MOOSE中是将[Kernels]一项一项((B^T*D*B)U即为一项，-F为另一项)写开，
-  # Kernels不同项使用不同函数的根本原因，是》》》变量与材料参数的组合方式不同《《《
-  # 本文的问题中，无体力，所以F=0，所以[Kernels]只有一项，即(B^T*D*B)U，具体在[Kernels/solid_x]中，
-# 定义变量与初始条件[Variables]：我们求解的变量，即位移向量U，本文研究三维问题，所以U是三维的，即U = [u_x, u_y, u_z]，对应[disp_x, disp_y, disp_z]
-# 定义材料属性[Materials]：材料属性，即控制方程中的D、B(严格来说B不能完全叫做材料属性，但目前可以这么理解)
-  # 一般来讲[Materials]中都是已知变量，如根据杨氏模量、泊松比算出D
-# 3.定义边界条件[BCs]：边界条件，这里使用Pressure边界条件与位移Dirichlet边界条件
-# 5.定义求解器[Executioner]：求解器，即求解KU - F=0，分为线性求解器与非线性求解器，具体解释在本代码最后
+#具体的耦合求解过程：
+#通过以上两个控制方程不断迭代求解，每一个时间步长，都计算出变量位移u、变量温度T的值，
+#知道u，就可计算出总应变ε总，即张量{∂u/∂x，∂u/∂y，∂u/∂z，∂u/∂x+∂u/∂y，∂u/∂y+∂u/∂z，∂u/∂z+∂u/∂x}
+#知道ε总，根据ε总 = ε弹 + ε热，ε热是一个特征量thermal_eigenstrain，即通过刚才求解出的T可计算出ε热
+#知道ε热，ε弹也就出来了。
+#根据σ = D·ε弹，即可计算出σ，即应力。
+#一个时间步长就解完了。
 
+#耦合体现在：
+#1. 温度场影响应力场：已知通过热应变 ε热 = α(T-T₀)，ε总 = ε弹 + ε热，σ = D·ε弹
+#2. 应力场影响温度场：通过间隙导热系数 h = f(gap, pressure)
 
 [GlobalParams]
-    displacements = 'disp_x disp_y disp_z' #全局变量，简化输入文件，如果没有这个，那么有许多地方就需要单独写上这个
+    displacements = 'disp_x disp_y disp_z'
 []
 
-
 [Variables]
-  #定义变量
+  #定义位移变量 - 用于求解力平衡方程
     [disp_x]
-      family = LAGRANGE #意思是使用拉格朗日插值法，常数插值法MONOMIAL，当明显我们的变量是连续的，所以使用拉格朗日插值法
-      order = FIRST #order=1，表示使用一阶插值法，由于我们的网格是HEX8（8节点六面体），所以使用一阶插值法
-                    # order=2，表示使用二阶插值法，对应网格也需要是HEX20（20节点六面体）  
+      family = LAGRANGE
+      order = FIRST
     []
     [disp_y]
     []
     [disp_z]
     []
+    #定义温度变量 - 用于求解热传导方程
+    [T]
+      initial_condition = 500 # 初始温度500K
+    []
 []
+
 [Kernels]
-  # 定义应力平衡方程
-  # 应力平衡方程：σ_ij,j + f_i = 0
-  # 其中，σ_ij是应力张量，f_i是体力（如重力），j是空间坐标。
-  # 在有限元中，应力平衡方程通过将应力张量与位移梯度（即应变）联系起来，并考虑边界条件和载荷来求解。
-  # 应力平衡方程在每个节点上建立，形成一个线性方程组，通过求解这个方程组可以得到节点的位移。
-  # 应力平衡方程是结构分析中的基本方程，用于描述材料在受力作用下的变形和应力分布。
+  #1. 力平衡方程相关项
     [solid_x]
         type = ADStressDivergenceTensors
-        variable = disp_x #variable=disp_x，表示x方向的位移
-        component = 0 #component=0，表示x方向的应力平衡方程
+        variable = disp_x
+        component = 0
     []
     [solid_y]
         type = ADStressDivergenceTensors
-        variable = disp_y #variable=disp_y，表示y方向的位移
-        component = 1 #component=1，表示y方向的应力平衡方程
+        variable = disp_y
+        component = 1
     []
     [solid_z]
         type = ADStressDivergenceTensors
-        variable = disp_z #variable=disp_z，表示z方向的位移
-        component = 2 #component=2，表示z方向的应力平衡方程
+        variable = disp_z
+        component = 2
+    []
+    #2. 热传导方程相关项
+    [heat_conduction]
+      type = ADHeatConduction # 热传导项 ∇·(k∇T)
+      variable = T
+    []
+    [hcond_time]
+      type = ADHeatConductionTimeDerivative # 时间导数项 ρc∂T/∂t
+      variable = T
+    []
+    [Fheat_source]
+      type = HeatSource # 体积热源项 q'''
+      variable = T
+      value = 4.2e8 # 功率密度 W/m³
+      block = pellet # 只在芯块区域有热源
     []
 []
 
 [BCs]
-  # 定义边界条件
+  #1. 位移边界条件
+  #固定平面的位移边界条件
   [y_zero_on_y_plane]
-    #y平面上的y的位移为0
     type = DirichletBC
     variable = disp_y
     boundary = 'yplane'
     value = 0
   []
   [x_zero_on_x_plane]
-    #x平面上的x的位移为0
     type = DirichletBC
     variable = disp_x
     boundary = 'xplane'
     value = 0
   []
-  [z_zero_on_bottom]
-    #底面上的z的位移为0
+  [z_zero_on_bottom_top]
     type = DirichletBC
     variable = disp_z
     boundary = 'bottom'
     value = 0
   []
-  [PressureOnBoundaryX]
-    #芯块包壳间隙压力
+  #2. 压力边界条件
+  #冷却剂压力边界条件
+  [colden_pressure_fuel_x]
     type = Pressure
     variable = disp_x
-    boundary = 'pellet_outer'
-    factor = 1e6 #压力大小
-    use_displaced_mesh = true #是否使用变形网格
+    boundary = 'clad_outer'
+    factor = 15.5e6 # 冷却剂压力15.5MPa
+    use_displaced_mesh = true
   []
-  [PressureOnBoundaryY]
-    #芯块包壳间隙压力
+  [colden_pressure_fuel_y]
     type = Pressure
     variable = disp_y
-    boundary = 'pellet_outer'
-    factor = 1e6 #压力大小
-    use_displaced_mesh = true #是否使用变形网格
+    boundary = 'clad_outer'
+    factor = 15.5e6
+    use_displaced_mesh = true
   []
-  [PressureOnBoundaryX2]
-    #芯块包壳间隙压力
+  #芯块包壳间隙压力边界条件
+  [gap_pressure_fuel_x]
     type = Pressure
     variable = disp_x
-    boundary = 'clad_inner'
-    factor = 1e6 #压力大小
-    use_displaced_mesh = true #是否使用变形网格
+    boundary = 'clad_inner pellet_outer'
+    factor = 2.5e6 # 间隙压力2.5MPa
+    use_displaced_mesh = true
   []
-  [PressureOnBoundaryY2]
-    #芯块包壳间隙压力
+  [gap_pressure_fuel_y]
     type = Pressure
     variable = disp_y
-    boundary = 'clad_inner'
-    factor = 1e6 #压力大小
-    use_displaced_mesh = true #是否使用变形网格
+    boundary = 'clad_inner pellet_outer'
+    factor = 2.5e6
+    use_displaced_mesh = true
+  []
+  #3. 温度边界条件
+  [ADNeumannBC0]
+    type = ADNeumannBC # 绝热边界条件
+    variable = T
+    boundary = 'yplane xplane'
+    value = 0
+  []
+  [coolant_bc]
+    type = DirichletBC # 冷却剂温度边界条件
+    variable = T
+    boundary = clad_outer
+    value = 500 # 冷却剂温度500K
   []
 []
-#
+
 [Materials]
-  # 定义材料属性，注意没有先后顺序
-  # 其实控制方程Kernel、边界条件BCs、材料属性Materials他们都是完全耦合的，
+  #1. 芯块材料属性
+  #热物理属性
+  [pellet_properties]
+    type = ADGenericConstantMaterial
+    prop_names = 'density specific_heat thermal_conductivity'
+    prop_values = '${pellet_density} ${pellet_specific_heat} ${pellet_thermal_conductivity}'
+    block = pellet
+  []
+  #热-力耦合：热应变
+  [pellet_thermal_eigenstrain]
+    type = ADComputeThermalExpansionEigenstrain
+    eigenstrain_name = thermal_eigenstrain
+    stress_free_temperature = 500 # 参考温度500K，这个值对于模拟结果影响巨大，一般取为初始温度
+    thermal_expansion_coeff = ${pellet_thermal_expansion_coef} # 热膨胀系数
+    temperature = T
+    block = pellet
+  []
+  #力学属性
+  [pellet_strain]
+    type = ADComputeSmallStrain
+    eigenstrain_names = 'thermal_eigenstrain'
+    block = pellet
+  []
+  [pellet_elasticity_tensor]
+    type = ADComputeIsotropicElasticityTensor
+    youngs_modulus = ${pellet_elastic_constants} # 弹性模量
+    poissons_ratio = ${pellet_nu} # 泊松比
+    block = pellet
+  []
 
-  # 把芯快包壳的材料属性定义在[Materials]中，
-  # 定义弹性矩阵，弹性矩阵是材料属性的一部分，由于它需要输入杨氏模量与泊松比，而芯快包壳的不太一样，所以需要单独定义
-    [pellet_elasticity_tensor]
-        type = ADComputeIsotropicElasticityTensor #计算弹性矩阵
-        youngs_modulus = ${pellet_elastic_constants} #杨氏模量
-        poissons_ratio = ${pellet_nu} #泊松比
-        block = pellet #block=pellet，表示在pellet这个block中使用这个材料属性
-    []
-    [clad_elasticity_tensor]
-      type = ADComputeIsotropicElasticityTensor
-      youngs_modulus = ${clad_elastic_constants}
-      poissons_ratio = ${clad_nu}
-      block = clad
-    []
-    #你会发现芯快包壳除了弹性矩阵不一样，其他都一样，所以可以定义一个通用的材料属性
-    [strain]
-        type = ADComputeSmallStrain #计算小应变
-    []
-    [stress]
-        type = ADComputeLinearElasticStress
-    []
+  #2. 包壳材料属性
+  #热物理属性
+  [clad_properties]
+    type = ADGenericConstantMaterial
+    prop_names = 'density specific_heat thermal_conductivity'
+    prop_values = '${clad_density} ${clad_specific_heat} ${clad_thermal_conductivity}'
+    block = clad
+  []
+  #热-力耦合：热应变
+  [clad_thermal_eigenstrain]
+    type = ADComputeThermalExpansionEigenstrain
+    eigenstrain_name = thermal_eigenstrain
+    stress_free_temperature = 500 # 参考温度500K，这个值对于模拟结果影响巨大，一般取为初始温度
+    thermal_expansion_coeff = ${clad_thermal_expansion_coef} # 热膨胀系数
+    temperature = T
+    block = clad
+  []
+  #力学属性
+  [clad_strain]
+    type = ADComputeSmallStrain
+    eigenstrain_names = 'thermal_eigenstrain'
+    block = clad
+  []
+  [clad_elasticity_tensor]
+    type = ADComputeIsotropicElasticityTensor
+    youngs_modulus = ${clad_elastic_constants}
+    poissons_ratio = ${clad_nu}
+    block = clad
+  []
+  #一起计算应力
+  [stress]
+    type = ADComputeLinearElasticStress
+  []
 []
 
-#求解器，solve_type与petsc_options_iname、petsc_options_value的设置决定了什么时候下班
-  [Executioner]
-      type = Steady #求解器，Steady是稳态求解器(没有时间步)，Transient是瞬态求解器(有时间步)
-      solve_type = 'PJFNK' #求解器，PJFNK是预处理雅可比自由牛顿-克雷洛夫方法
-      petsc_options_iname = '-pc_type'
-      petsc_options_value = 'lu'       # LU分解，小问题效果好
+[ThermalContact]
+  [thermal_contact]
+    type = GapHeatTransfer # 间隙传热模型
+    variable = T
+    primary = clad_inner # 主边界
+    secondary = pellet_outer # 从边界
+    emissivity_primary = 0.8 # 主边界发射率
+    emissivity_secondary = 0.8 # 从边界发射率
+    gap_conductivity = 0.1 # 间隙等效导热系数
+    quadrature = true
+    gap_geometry_type = CYLINDER # 圆柱形间隙
+    cylinder_axis_point_1 = '0 0 0'
+    cylinder_axis_point_2 = '0 0 0.0001'
   []
-#PETSc求解器的参数设置，如下这个我不同清楚到底应该选哪个，可以分别都试一下
-  #1.不完全LU分解（巨快）
+[]
+
+[Executioner]
+  type = Transient # 瞬态求解器
+  solve_type = 'PJFNK' #求解器，PJFNK是预处理雅可比自由牛顿-克雷洛夫方法
+
+  automatic_scaling = true # 启用自动缩放功能，有助于改善病态问题的收敛性
+  compute_scaling_once = true  # 每个时间步都重新计算缩放
+  nl_max_its = 20
+  nl_rel_tol = 5e-7 # 非线性求解的相对容差
+  nl_abs_tol = 1e-7 # 非线性求解的绝对容差
+  l_tol = 1e-7  # 线性求解的容差
+  l_max_its = 50 # 线性求解的最大迭代次数
+  accept_on_max_fixed_point_iteration = true # 达到最大迭代次数时接受解
+  dt = 3600 # 时间步长3600s
+  end_time = 3e5 # 总时间24h
+  # 现在我们就卡死nl_max_its = 10，  以及l_max_its = 50以试一下各个求解器
+
+    # #1.不完全LU分解（最慢，甚至第一步就不收敛）
     # petsc_options_iname = '-pc_type'
     # petsc_options_value = 'ilu'      # 不完全LU分解
-  #2.直接求解器（巨快，和1差不多）
-    # petsc_options_iname = '-pc_type'
-    # petsc_options_value = 'lu'       # LU分解，小问题效果好
-  #3.加速收敛，（最慢）中等规模
+  # 2.直接求解器（最快）
+    petsc_options_iname = '-pc_type'
+    petsc_options_value = 'lu'       # LU分解，小问题效果好
+  #3.加速收敛，（巨慢，第一步倒是收敛了）中等规模
     # petsc_options_iname = '-pc_type -sub_pc_type -sub_pc_factor_shift_type'
     # petsc_options_value = 'asm lu NONZERO'  # 加速收敛
-  #4.多重网格（比2慢，比3快）大规模
+  #4.多重网格（第二快）大规模
     # petsc_options_iname = '-pc_type -pc_hypre_type'
     # petsc_options_value = 'hypre boomeramg'  # 代数多重网格，大问题效果好
-  #5.GMRES重启参数（比1,、2慢，比4快）大规模问题
+  #5.GMRES重启参数（并列第二快）大规模问题
     # petsc_options_iname = '-ksp_gmres_restart  -pc_type  -pc_hypre_type  -pc_hypre_boomeramg_max_iter'
     # petsc_options_value = '201                  hypre     boomeramg       4'
-      # 参数解释：
-        # 1. -ksp_gmres_restart = 201    
-        # # GMRES重启参数
-        # # 当达到201次迭代后重新开始
-        # # 避免存储太多Krylov子空间向量
-
-        # 2. -pc_type = hypre           
-        # # 使用HYPRE预处理器
-        # # 适合大规模并行计算
-
-        # 3. -pc_hypre_type = boomeramg 
-        # # 使用代数多重网格方法
-        # # 对非线性问题效果好
-
-        # 4. -pc_hypre_boomeramg_max_iter = 8
-        # # BoomerAMG最大迭代次数
-        # # 控制预处理的计算量
+ 
+[]
 
 
-
-
-# 以下是后处理部分，用于导出应力数据
-# 》》》》》》》》》》》
-# 》》》》》》》》》》》
-# 我们想看看压力边界条件在芯块包壳间隙中运用的对不对，主要是压力的大小与方向对不对
-# 本文研究的是几何为圆柱体与圆环，因此我们导出应力的形式为：
-# 径向应力σrr，周向应力σθθ，轴向应力σzz
-#想要导出应力，需要定义[AuxVariables]与[AuxKernels]
 [AuxVariables]
   [hoop_stress]
     order = CONSTANT
@@ -339,126 +403,3 @@ clad_thermal_expansion_coef=5.0e-6#K-1
 [Outputs]
   exodus = true #表示输出exodus格式文件
 []
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# 》》》》》》》》》》》》有限元相关的原理
-# 1. 连续形式：
-#    ∇·σ + f = 0  (在域Ω内)
-#    σ·n = t       (在边界Γ上)
-
-# 2. 本构关系和几何关系：
-#    σ = Dε        (本构关系，D是弹性矩阵)
-#    ε = Bu        (应变-位移关系，B是应变-位移矩阵)
-
-# 3. 变分形式：
-#    ∫Ω δεᵀσ dΩ = ∫Ω δuᵀf dΩ + ∫Γ δuᵀt dΓ
-
-# 4. 离散化：
-#    u ≈ uh = ∑(j=1 to n) uj·Nj(x) = NU        (位移插值，N是形函数矩阵)
-#    δu ≈ δuh = ∑(i=1 to n) δui·Ni(x) = NδU
-#    ε = Bu        (B是应变-位移矩阵)
-#    δε = BδU
-
-# 5. 代入变分形式：
-#    ∫Ω (BδU)ᵀDBU dΩ = ∫Ω (NδU)ᵀf dΩ + ∫Γ (NδU)ᵀt dΓ
-
-# 6. 由于δU是任意的，得到：
-#    (∫Ω BᵀDB dΩ)U = ∫Ω Nᵀf dΩ + ∫Γ Nᵀt dΓ
-
-# 7. 最终形式：
-#    KU = F
-#    其中：
-#    K = ∫Ω BᵀDB dΩ    (刚度矩阵)
-#    F = ∫Ω Nᵀf dΩ + ∫Γ Nᵀt dΓ    (载荷向量)
-
-# 8. 线性问题 (材料性质和几何都是线性的):
-#    KU = F  
-#    其中 K 和 F 都是常数（不依赖于 U）
-   
-#    直接求解：
-#    - 使用 Krylov 子空间方法（如 GMRES）
-#    - 求解 KU = F
-#    - 一次求解即可得到结果
-
-# 9. 非线性问题 (考虑材料非线性或几何非线性):
-#    R(U) = K(U)U - F(U) = 0
-#    其中：
-#    - K(U) = ∫Ω BᵀD(U)B dΩ    (K 依赖于 U)
-#    - F(U) 也可能依赖于 U
-   
-      #    Newton迭代求解：
-            #    a) 展开 R(U) 在 Uᵏ 处的 Taylor 级数：
-            #       R(Uᵏ) + J(Uᵏ)(Uᵏ⁺¹-Uᵏ) = 0
-                  
-            #    b) 雅可比矩阵：
-            #       J(U) = ∂R/∂U = K(U) + ∂K(U)/∂U·U - ∂F(U)/∂U
-              
-            #    c) 每个 Newton 步求解线性系统：
-            #       J(Uᵏ)δUᵏ = -R(Uᵏ)
-                  
-            #    d) 更新解：
-      #       Uᵏ⁺¹ = Uᵏ + δUᵏ
-      #    PJFNK  (Preconditioned Jacobian-Free Newton-Krylov) 求解过程：
-            # 【非线性部分 - 外循环】 
-            # 1. Newton迭代（外循环）要求解：
-            #    J(Uᵏ)δUᵏ = -R(Uᵏ)
-            # 【线性部分 - 内循环】
-            # 2. 使用 GMRES 方法求解这个线性系统：
-              
-            #    a) 初始残差：
-            #       r₀ = -R(Uᵏ) - J(Uᵏ)δUᵏ₀
-            #       其中 δUᵏ₀ 是初始猜测
-              
-            #    b) 构建 Krylov 子空间：
-            #       Km = span{r₀, Jr₀, J²r₀, ..., Jᵐ⁻¹r₀}
-                  
-            #       关键点：需要计算 Jv（其中v是子空间基向量）
-            #       这时使用方向导数近似：
-            #       Jv ≈ [R(U + εv) - R(U)]/ε
-
-            # 3. 加入预处理改善收敛性（线性变换）：
-              
-            #    原系统：J(Uᵏ)δUᵏ = -R(Uᵏ)
-            #    预处理后：M⁻¹J(Uᵏ)δUᵏ = -M⁻¹R(Uᵏ)
-
-            #    具体算法步骤：
-            #    ```
-            #    GMRES with Preconditioning:
-              
-            #    1) 计算初始残差：
-            #       r₀ = -M⁻¹R(Uᵏ) - M⁻¹J(Uᵏ)δUᵏ₀
-            #       v₁ = r₀/||r₀||
-              
-            #    2) 对 j = 1,2,...,m：
-            #       # 计算 M⁻¹Jvⱼ
-            #       w = M⁻¹[R(U + εvⱼ) - R(U)]/ε
-                  
-            #       # Gram-Schmidt 正交化
-            #       对 i = 1,...,j：
-            #         hᵢⱼ = (w,vᵢ)
-            #         w = w - hᵢⱼvᵢ
-                  
-            #       hⱼ₊₁,ⱼ = ||w||
-            #       vⱼ₊₁ = w/hⱼ₊₁,ⱼ
-              
-            #    3) 求解最小二乘问题：
-            #       min ||βe₁ - H̄ᵐy||
-              
-            #    4) 计算解：
-            #       δUᵏ = V̄ᵐy
