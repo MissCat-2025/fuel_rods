@@ -12,13 +12,14 @@ n_elems_radial_pellet = 30 # 芯块径向网格数
 #材料参数
 pellet_elastic_constants=2.2e11#Pa
 pellet_nu = 0.345
+clad_elastic_constants=7.52e10#Pa
+clad_nu = 0.33
+#热平衡方程相关参数
 pellet_density=10431.0#10431.0*0.85#kg⋅m-3
 pellet_specific_heat=300
 pellet_thermal_conductivity = 5
 pellet_thermal_expansion_coef=1e-5#K-1
 
-clad_elastic_constants=7.52e10#Pa
-clad_nu = 0.33
 clad_density=6.59e3#kg⋅m-3
 clad_specific_heat=264.5
 clad_thermal_conductivity = 16
@@ -79,9 +80,9 @@ clad_thermal_expansion_coef=5.0e-6#K-1
 []
 ##step2计算了间隙gap压力对应下的应力分析，但是没有热交换
 #step3基于此，开始启动反应堆，于是热力耦合开始
-#耦合无非就是多了个热平衡方程，所以[Variables]、[Kernels]与[Materials]中需要加入热相关的参数（常数）：热膨胀系数，热传导系数，比热，密度
+#耦合无非就是多了个热平衡方程，所以[Variables]、[Kernels]与[Materials]中需要加入热相关的参数（常数）：热传导系数，比热，密度（直接与控制方程相关）；热膨胀系数（与[Materials]中的应变相关），
 #边界条件[BCs]的变化：包壳外出现冷却剂，它既有500K的温度，也有15.5MP的压力
-#核[kernel]的变化：加入热平衡方程的三项
+#核[kernel]的变化：
 #材料[Materials]的变化：加入热相关的参数（常数）：热膨胀系数，热传导系数，比热，密度
 
 
