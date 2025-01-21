@@ -424,7 +424,7 @@ power_factor = '${fparse 1000*1/3.1415926/pellet_outer_radius/pellet_outer_radiu
     # petsc_options_value = '201                  hypre     boomeramg       4'
  
 
-    #计算到约130000s时，环形应力达到2Gpa，早已发生开裂，因此无法收敛。
+    #计算到约130000s时，环形应力达到2Gpa，早已发生开裂，因此无法收敛。(待验证)
 []
 
 

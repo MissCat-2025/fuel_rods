@@ -1,15 +1,12 @@
+###芯块使用中心点作为固定点
+###包壳使用外边界上下左右4个点作为固定点
+
+
+
+
+
+
 # 各种参数都取自[1]Multiphysics phase-field modeling of quasi-static cracking in urania ceramic nuclear fuel
-
-#几何与网格参数
-pellet_outer_radius = 4.1e-3#直径变半径，并且单位变mm
-clad_inner_radius = 4.18e-3#直径变半径，并且单位变mm
-clad_outer_radius = 4.78e-3#直径变半径，并且单位变mm
-length = 0.1e-3 # 芯块长度17.78mm
-n_elems_axial = 1 # 轴向网格数
-n_elems_azimuthal = 100 # 周向网格数
-n_elems_radial_clad = 4 # 包壳径向网格数
-n_elems_radial_pellet = 20 # 芯块径向网格数
-
 #力平衡方程相关参数
 pellet_elastic_constants=2.2e11#Pa
 pellet_nu = 0.345
@@ -29,59 +26,80 @@ clad_specific_heat=264.5 # J/(kg·K)
 clad_thermal_conductivity = 16 # W/(m·K)
 clad_thermal_expansion_coef=5.0e-6#K-1
 
+# 这第一步就是为生成网格文件Oconee_Rod_15309.e
+# 语法要求：仅仅为了生成网格文件：Run with --mesh-only:
+#https://mooseframework.inl.gov/source/meshgenerators/ConcentricCircleMeshGenerator.html
+#   mpirun -n 10 ../../fuel_rods-opt -i step1_to_generate_e.i --mesh-only Oconee_Rod_15309.e
+#《[1] WEI LI, KOROUSH SHIRVAN. Multiphysics phase-field modeling of quasi-static cracking in urania ceramic nuclear fuel[J/OL]. Ceramics International, 2021, 47(1): 793-810. DOI:10.1016/j.ceramint.2020.08.191.
+
+pellet_outer_radius = 4.1e-3#直径变半径，并且单位变mm
+clad_inner_radius = 4.18e-3#直径变半径，并且单位变mm
+clad_outer_radius = 4.78e-3#直径变半径，并且单位变mm
+n_elems_azimuthal = 100 # 周向网格数
+n_elems_radial_clad = 8 # 包壳径向网格数
+n_elems_radial_pellet = 20 # 芯块径向网格数
+
 [Mesh]
-    [pellet_clad_gap]
-      type = ConcentricCircleMeshGenerator
-      num_sectors = '${n_elems_azimuthal}'  # 周向网格数
-      radii = '${pellet_outer_radius} ${clad_inner_radius} ${clad_outer_radius}'
-      rings = '${n_elems_radial_pellet} 1 ${n_elems_radial_clad}'
-      has_outer_square = false
-      preserve_volumes = true
-      portion = top_right # 生成四分之一计算域
-      smoothing_max_it=10 # 平滑迭代次数
-    []
-    [rename_pellet_outer_bdy]
-      type = SideSetsBetweenSubdomainsGenerator
-      input = pellet_clad_gap
-      primary_block = 1
-      paired_block = 2
-      new_boundary = 'pellet_outer' #将block1与block2之间的边界命名为pellet_outer
-    []
-    [rename_clad_inner_bdy]
-      type = SideSetsBetweenSubdomainsGenerator
-      input = rename_pellet_outer_bdy
-      primary_block = 3
-      paired_block = 2
-      new_boundary = 'clad_inner' #将block3与block2之间的边界命名为clad_inner
-    []
-
-    [2d_mesh]
-      type = BlockDeletionGenerator
-      input = rename_clad_inner_bdy
-      block = 2 # 删除block2
-    []
-    [rename]
-      type = RenameBoundaryGenerator
-      input = 2d_mesh
-      old_boundary = 'bottom left outer'
-      new_boundary = 'yplane xplane clad_outer' # 将边界命名为yplane xplane clad_outer
-
-    []
-  [extrude]
-    type = MeshExtruderGenerator
-    input = rename
-    extrusion_vector = '0 0 ${length}' # 轴向长度
-    num_layers = '${n_elems_axial}' # 轴向网格数
-    bottom_sideset = 'bottom' # 命名为底面
-    top_sideset = 'top' # 命名为顶面
+  [pellet_clad_gap]
+    type = ConcentricCircleMeshGenerator
+    num_sectors = '${n_elems_azimuthal}'  # 周向网格数
+    radii = '${pellet_outer_radius} ${clad_inner_radius} ${clad_outer_radius}'
+    rings = '${n_elems_radial_pellet} 1 ${n_elems_radial_clad}'
+    has_outer_square = false
+    preserve_volumes = true
+    # portion = top_right # 生成四分之一计算域
+    smoothing_max_it=15 # 平滑迭代次数
   []
-  [rename2]
-    type = RenameBlockGenerator
-    input = extrude
-    old_block  = '1 3'
-    new_block  = 'pellet clad' # 将block1和block3分别命名为pellet和clad
+  [rename_pellet_outer_bdy]
+    type = SideSetsBetweenSubdomainsGenerator
+    input = pellet_clad_gap
+    primary_block = 1
+    paired_block = 2
+    new_boundary = 'pellet_outer' #将block1与block2之间的边界命名为pellet_outer
   []
-  
+  [rename_clad_inner_bdy]
+    type = SideSetsBetweenSubdomainsGenerator
+    input = rename_pellet_outer_bdy
+    primary_block = 3
+    paired_block = 2
+    new_boundary = 'clad_inner' #将block3与block2之间的边界命名为clad_inner
+  []
+
+  [2d_mesh]
+    type = BlockDeletionGenerator
+    input = rename_clad_inner_bdy
+    block = 2 # 删除block2
+  []
+  [rename]
+    type = RenameBoundaryGenerator
+    input = 2d_mesh
+    old_boundary = 'outer'
+    new_boundary = 'clad_outer' # 将边界命名为yplane xplane clad_outer
+  []
+[rename2]
+  type = RenameBlockGenerator
+  input = rename
+  old_block  = '1 3'
+  new_block  = 'pellet clad' # 将block1和block3分别命名为pellet和clad
+[]
+[center_line]
+  type = ExtraNodesetGenerator
+  input = rename2
+  coord = '0 0'
+  new_boundary  = 'center'
+[]
+[center_line2]
+  type = ExtraNodesetGenerator
+  input = center_line
+  coord = '0 ${clad_outer_radius};0 -${clad_outer_radius}'
+  new_boundary  = 'y_axis'
+[]
+[center_line3]
+  type = ExtraNodesetGenerator
+  input = center_line2
+  coord = '${clad_outer_radius} 0;-${clad_outer_radius} 0'
+  new_boundary  = 'x_axis'
+[]
 []
 
 #以上是生成几何与网格
@@ -116,7 +134,7 @@ clad_thermal_expansion_coef=5.0e-6#K-1
 #2. 应力场影响温度场：通过间隙导热系数 h = f(gap, pressure)
 
 [GlobalParams]
-    displacements = 'disp_x disp_y disp_z'
+    displacements = 'disp_x disp_y'
 []
 
 [Variables]
@@ -126,8 +144,6 @@ clad_thermal_expansion_coef=5.0e-6#K-1
       order = FIRST
     []
     [disp_y]
-    []
-    [disp_z]
     []
     #定义温度变量 - 用于求解热传导方程
     [T]
@@ -146,11 +162,6 @@ clad_thermal_expansion_coef=5.0e-6#K-1
         type = ADStressDivergenceTensors
         variable = disp_y
         component = 1
-    []
-    [solid_z]
-        type = ADStressDivergenceTensors
-        variable = disp_z
-        component = 2
     []
     #2. 热传导方程相关项
     [heat_conduction]
@@ -175,19 +186,13 @@ clad_thermal_expansion_coef=5.0e-6#K-1
   [y_zero_on_y_plane]
     type = DirichletBC
     variable = disp_y
-    boundary = 'yplane'
+    boundary = 'x_axis center'
     value = 0
   []
   [x_zero_on_x_plane]
     type = DirichletBC
     variable = disp_x
-    boundary = 'xplane'
-    value = 0
-  []
-  [z_zero_on_bottom_top]
-    type = DirichletBC
-    variable = disp_z
-    boundary = 'bottom'
+    boundary = 'y_axis center'
     value = 0
   []
   #2. 压力边界条件
@@ -220,13 +225,6 @@ clad_thermal_expansion_coef=5.0e-6#K-1
     boundary = 'clad_inner pellet_outer'
     factor = 2.5e6
     use_displaced_mesh = true
-  []
-  #3. 温度边界条件
-  [ADNeumannBC0]
-    type = ADNeumannBC # 绝热边界条件
-    variable = T
-    boundary = 'yplane xplane'
-    value = 0
   []
   [coolant_bc]
     type = DirichletBC # 冷却剂温度边界条件
@@ -330,7 +328,7 @@ clad_thermal_expansion_coef=5.0e-6#K-1
   l_tol = 1e-7  # 线性求解的容差
   l_max_its = 50 # 线性求解的最大迭代次数
   accept_on_max_fixed_point_iteration = true # 达到最大迭代次数时接受解
-  dt = 3600 # 时间步长3600s
+  dt = 1 # 时间步长3600s
   end_time = 3e5 # 总时间24h
   # 现在我们就卡死nl_max_its = 10，  以及l_max_its = 50以试一下各个求解器
 
@@ -399,7 +397,6 @@ clad_thermal_expansion_coef=5.0e-6#K-1
     execute_on = 'TIMESTEP_END'
   []
 []
-
 
 [Outputs]
   exodus = true #表示输出exodus格式文件

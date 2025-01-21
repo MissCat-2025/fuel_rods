@@ -5,9 +5,9 @@ clad_inner_radius = 4.18e-3#直径变半径，并且单位变mm
 clad_outer_radius = 4.78e-3#直径变半径，并且单位变mm
 length = 11e-3 # 芯块长度17.78mm
 n_elems_axial = 2 # 轴向网格数
-n_elems_azimuthal = 50 # 周向网格数
+n_elems_azimuthal = 100 # 周向网格数
 n_elems_radial_clad = 4 # 包壳径向网格数
-n_elems_radial_pellet = 30 # 芯块径向网格数
+n_elems_radial_pellet = 20 # 芯块径向网格数
 #材料参数
 
 pellet_elastic_constants=2.2e11#Pa

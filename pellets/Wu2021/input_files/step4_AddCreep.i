@@ -65,7 +65,6 @@ clad_thermal_expansion_coef=5.0e-6#K-1
       input = 2d_mesh
       old_boundary = 'bottom left outer'
       new_boundary = 'yplane xplane clad_outer' # 将边界命名为yplane xplane clad_outer
-
     []
   [extrude]
     type = MeshExtruderGenerator
@@ -81,7 +80,18 @@ clad_thermal_expansion_coef=5.0e-6#K-1
     old_block  = '1 3'
     new_block  = 'pellet clad' # 将block1和block3分别命名为pellet和clad
   []
-  
+  # [x_axis]
+  #   type = ExtraNodesetGenerator
+  #   input = rename2
+  #   coord = '0 0 ${length}; 0 0 0;${clad_outer_radius} 0 0;-${clad_outer_radius} 0 0'
+  #   new_boundary  = 'x_axis'
+  # []
+  # [y_axis]
+  #   type = ExtraNodesetGenerator
+  #   input = x_axis
+  #   coord = '0 0 ${length}; 0 0 0;0 ${clad_outer_radius} 0;0 -${clad_outer_radius} 0'
+  #   new_boundary  = 'y_axis'
+  # []
 []
 
 #以上是生成几何与网格
@@ -172,6 +182,7 @@ clad_thermal_expansion_coef=5.0e-6#K-1
 [BCs]
   #1. 位移边界条件
   #固定平面的位移边界条件
+  #固定平面的位移边界条件
   [y_zero_on_y_plane]
     type = DirichletBC
     variable = disp_y
@@ -220,13 +231,6 @@ clad_thermal_expansion_coef=5.0e-6#K-1
     boundary = 'clad_inner pellet_outer'
     factor = 2.5e6
     use_displaced_mesh = true
-  []
-  #3. 温度边界条件
-  [ADNeumannBC0]
-    type = ADNeumannBC # 绝热边界条件
-    variable = T
-    boundary = 'yplane xplane'
-    value = 0
   []
   [coolant_bc]
     type = DirichletBC # 冷却剂温度边界条件
@@ -338,14 +342,14 @@ clad_thermal_expansion_coef=5.0e-6#K-1
     # petsc_options_iname = '-pc_type'
     # petsc_options_value = 'ilu'      # 不完全LU分解
   # 2.直接求解器（最快）
-    petsc_options_iname = '-pc_type'
-    petsc_options_value = 'lu'       # LU分解，小问题效果好
+    # petsc_options_iname = '-pc_type'
+    # petsc_options_value = 'lu'       # LU分解，小问题效果好
   #3.加速收敛，（巨慢，第一步倒是收敛了）中等规模
     # petsc_options_iname = '-pc_type -sub_pc_type -sub_pc_factor_shift_type'
     # petsc_options_value = 'asm lu NONZERO'  # 加速收敛
   #4.多重网格（第二快）大规模
-    # petsc_options_iname = '-pc_type -pc_hypre_type'
-    # petsc_options_value = 'hypre boomeramg'  # 代数多重网格，大问题效果好
+    petsc_options_iname = '-pc_type -pc_hypre_type'
+    petsc_options_value = 'hypre boomeramg'  # 代数多重网格，大问题效果好
   #5.GMRES重启参数（并列第二快）大规模问题
     # petsc_options_iname = '-ksp_gmres_restart  -pc_type  -pc_hypre_type  -pc_hypre_boomeramg_max_iter'
     # petsc_options_value = '201                  hypre     boomeramg       4'

@@ -213,7 +213,7 @@ clad_thermal_expansion_coef=5.0e-6#K-1
   [z_zero_on_bottom]
     type = DirichletBC
     variable = disp_z
-    boundary = 'bottom top'
+    boundary = 'bottom'
     value = 0
   []
     #冷却剂压力

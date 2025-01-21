@@ -189,10 +189,17 @@ clad_thermal_expansion_coef=5.0e-6#K-1
     variable = x
     block = pellet
   []
-  [complex_diffusion]
-    type = ADComplexDiffusionKernel  # 需要实现这个自定义kernel
+  [fickian_diffusion]
+    type = ADMatDiffusion
     variable = x
-    temperature = T
+    diffusivity = D_fickian #氧超化学计量引起的蠕变
+    block = pellet
+  []
+  
+  [soret_diffusion]
+    type = ADMatDiffusion
+    variable = T
+    diffusivity = D_soret #温度引起的蠕变
     block = pellet
   []
 []
