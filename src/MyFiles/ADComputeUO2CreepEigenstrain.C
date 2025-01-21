@@ -1,7 +1,7 @@
 // src/materials/ADComputeUO2CreepEigenstrain.C
 #include "ADComputeUO2CreepEigenstrain.h"
 
-registerADMooseObject("FuelRodsApp", ADComputeUO2CreepEigenstrain);
+registerADMooseObject("raccoonApp", ADComputeUO2CreepEigenstrain);
 
 InputParameters
 ADComputeUO2CreepEigenstrain::validParams()

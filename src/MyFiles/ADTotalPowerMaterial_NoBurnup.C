@@ -1,7 +1,7 @@
 // ADTotalPowerMaterial_NoBurnup.C
 #include "ADTotalPowerMaterial_NoBurnup.h"
-
-registerMooseObject("FuelRodsApp", ADTotalPowerMaterial_NoBurnup);
+#include "Function.h"  // 或者 #include "FunctionInterface.h"
+registerMooseObject("raccoonApp", ADTotalPowerMaterial_NoBurnup);
 
 InputParameters
 ADTotalPowerMaterial_NoBurnup::validParams()
