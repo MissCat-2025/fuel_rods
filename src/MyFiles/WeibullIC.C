@@ -1,6 +1,6 @@
 #include "WeibullIC.h"
 
-registerMooseObject("raccoonApp", WeibullIC);
+registerMooseObject("FuelRodsApp", WeibullIC);
 
 InputParameters
 WeibullIC::validParams()

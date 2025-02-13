@@ -1,7 +1,7 @@
 // src/materials/UO2CreepRate.C
 #include "UO2CreepRate.h"
 
-registerADMooseObject("raccoonApp", UO2CreepRate);
+registerADMooseObject("FuelRodsApp", UO2CreepRate);
 
 InputParameters
 UO2CreepRate::validParams()

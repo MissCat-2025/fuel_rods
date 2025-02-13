@@ -1,6 +1,6 @@
 #include "ADComplexDiffusionKernel.h"
 //扩散率的数量级存在问题
-registerMooseObject("raccoonApp", ADComplexDiffusionKernel);
+registerMooseObject("FuelRodsApp", ADComplexDiffusionKernel);
 
 InputParameters
 ADComplexDiffusionKernel::validParams()
