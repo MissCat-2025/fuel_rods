@@ -6,7 +6,9 @@ def sync_fracture_back():
     # 配置路径
     source_root = "/home/yp/projects/raccoon/FuelFracture"
     target_root = "/home/yp/projects/fuel_rods/FuelFracture"
+    
     exclude_ext = {'.e', '.xx'}  # 需要排除的扩展名
+    exclude_dirs = {'parameter_studies', 'Outputs','.jitcache'}  # 需要排除的文件夹
 
     # 自定义目录复制函数
     def copy_recursive(src, dst):
@@ -14,7 +16,11 @@ def sync_fracture_back():
             src_path = os.path.join(src, item)
             dst_path = os.path.join(dst, item)
             
+            # 检查是否是需要排除的文件夹
             if os.path.isdir(src_path):
+                if item in exclude_dirs:
+                    print(f"跳过排除的文件夹: {src_path}")
+                    continue
                 if not os.path.exists(dst_path):
                     os.makedirs(dst_path, exist_ok=True)
                 copy_recursive(src_path, dst_path)
