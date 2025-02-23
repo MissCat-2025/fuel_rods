@@ -15,7 +15,7 @@ output_dir = os.path.join(base_dir, 'parameter_studies')
 checkpoint_config = '''
   [my_checkpoint]
     type = Checkpoint
-    time_step_interval = 1    # 每5个时间步保存
+    time_step_interval = 5    # 每5个时间步保存
     num_files = 4            # 保留最近4个检查点
     wall_time_interval = 600 # 每10分钟保存一次（秒）
   []'''

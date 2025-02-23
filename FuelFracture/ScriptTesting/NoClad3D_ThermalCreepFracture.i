@@ -542,11 +542,6 @@ power_factor = '${fparse 1000*1/3.1415926/pellet_outer_radius/pellet_outer_radiu
   []
 []
 
-
-
-
-h=${fparse 3.14*pellet_outer_radius/2/n_elems_azimuthal}
-
 [Outputs]
   exodus = true #表示输出exodus格式文件
 []

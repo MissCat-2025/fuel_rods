@@ -9,7 +9,7 @@ pellet_elastic_constants=2.2e11#Pa
 pellet_nu = 0.345
 pellet_specific_heat=300
 pellet_thermal_conductivity = 5
-pellet_thermal_expansion_coef=1000e-5#K-1
+pellet_thermal_expansion_coef=1e-5#K-1
 
 # mpirun -n 12 /home/yp/projects/raccoon/raccoon-opt -i NoClad3D_ThermalCouple.i 
 #《《下面数据取自[1]Thermomechanical Analysis and Irradiation Test of Sintered Dual-Cooled Annular pellet》》
