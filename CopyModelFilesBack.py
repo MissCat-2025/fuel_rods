@@ -1,7 +1,7 @@
 import os
 import shutil
 import glob
-
+#将raccoon中的模型文件同步回fuel_rods
 def sync_to_fuelrods():
     # 路径配置
     source_base = "/home/yp/projects/raccoon"

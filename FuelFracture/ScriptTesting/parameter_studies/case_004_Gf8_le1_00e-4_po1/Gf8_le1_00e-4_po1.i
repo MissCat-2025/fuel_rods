@@ -1,3 +1,10 @@
+# === 参数研究案例 ===
+# end_time = 5.0
+# Gf: 8
+# length_scale_paramete: 1.00e-4
+# power_factor_mod: 1
+# 生成时间: 2025-02-23 22:39:31
+
 #step2计算了gap压力与冷却剂压力对应下的应力应变，
 #step3基于此，开始启动反应堆，热交换开始，于是热力耦合开始
 #边界条件[BCs]的变化：包壳外出现冷却剂，它既有500K的温度，也有15.5MP的压力
@@ -9,9 +16,9 @@ pellet_elastic_constants=2.2e11#Pa
 pellet_nu = 0.345
 pellet_specific_heat=300
 pellet_thermal_conductivity = 5
-pellet_thermal_expansion_coef=1e-5#K-1
+pellet_thermal_expansion_coef=1000e-5#K-1
 
-# mpirun -n 16 ../../../../../raccoon-opt -i NoClad3D_ThermalCouple.i 
+# mpirun -n 12 /home/yp/projects/raccoon/raccoon-opt -i NoClad3D_ThermalCouple.i 
 #《《下面数据取自[1]Thermomechanical Analysis and Irradiation Test of Sintered Dual-Cooled Annular pellet》》
 
 # 双冷却环形燃料几何参数 (单位：mm)(无内外包壳)
@@ -273,20 +280,20 @@ normal_tol = '${fparse 3.14*pellet_inner_diameter/n_azimuthal*1e-3/10}'
     solve_type = 'PJFNK'
     petsc_options_iname = '-pc_type -pc_factor_mat_solver_package -ksp_type'
     petsc_options_value = 'lu superlu_dist gmres'
-    dtmax = 2.5
+    dtmax = 1
     dtmin = 1
     end_time = 5
     automatic_scaling = true # 启用自动缩放功能，有助于改善病态问题的收敛性
     compute_scaling_once = true  # 每个时间步都重新计算缩放
-    nl_max_its = 10
+    nl_max_its = 3
     nl_rel_tol = 1e-5 # 非线性求解的相对容差
     nl_abs_tol = 1e-8 # 非线性求解的绝对容差
     l_tol = 1e-6  # 线性求解的容差
-    l_max_its = 50 # 线性求解的最大迭代次数
-    accept_on_max_fixed_point_iteration = true # 达到最大迭代次数时接受解
+    l_max_its = 10 # 线性求解的最大迭代次数
+    # accept_on_max_fixed_point_iteration = true # 达到最大迭代次数时接受解
     [TimeStepper]
       type = IterationAdaptiveDT
-      dt = 10
+      dt = 1
       cutback_factor = 0.5
       growth_factor = 2
       optimal_iterations = 10
@@ -294,5 +301,11 @@ normal_tol = '${fparse 3.14*pellet_inner_diameter/n_azimuthal*1e-3/10}'
   []
 []
 [Outputs]
-  exodus = true
+  [my_checkpoint]
+    type = Checkpoint
+    time_step_interval = 1    # 每5个时间步保存
+    num_files = 4            # 保留最近4个检查点
+    wall_time_interval = 600 # 每10分钟保存一次（秒）
+  []
+  exodus =  true
 []

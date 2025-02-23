@@ -1,7 +1,7 @@
 import os
 import shutil
 import glob
-
+#将raccoon中的FuelFracture目录同步回fuel_rods
 def sync_fracture_back():
     # 配置路径
     source_root = "/home/yp/projects/raccoon/FuelFracture"
