@@ -7,8 +7,8 @@ from datetime import datetime
 # 基础配置
 base_dir = '/home/yp/projects/raccoon/FuelFracture/ScriptTesting'
 # 主程序模板文件与子程序模板文件相同，则是单程序模式
-template_main = os.path.join(base_dir, 'NoClad3D_ThermalCouple.i')
-template_sub = os.path.join(base_dir, 'NoClad3D_ThermalCouple.i')
+template_main = os.path.join(base_dir, 'NoClad3D_ThermalCreepFracture.i')
+template_sub = os.path.join(base_dir, 'NoClad3D_ThermalCreepFracture_Sub.i')
 output_dir = os.path.join(base_dir, 'parameter_studies')
 
 # Checkpoint配置，加入存档功能
@@ -62,8 +62,8 @@ def add_checkpoint_to_outputs(content):
     outputs_match = re.search(r'\[Outputs\](.*?)\[\]', content, re.DOTALL)
     if outputs_match:
         outputs_block = outputs_match.group(1)
-        # 检查是否已经有checkpoint配置
-        if 'my_checkpoint' not in outputs_block:
+        # 检查是否已经有checkpoint配置 - 更新检测条件
+        if 'type = Checkpoint' not in outputs_block:
             # 在[Outputs]块的开始处添加checkpoint配置
             new_outputs = f'[Outputs]{checkpoint_config}{outputs_block}[]'
             content = content.replace(outputs_match.group(0), new_outputs)
@@ -207,8 +207,6 @@ def generate_study_cases():
             with open(template_sub, 'r') as f:
                 sub_content = generate_header(params) + f.read()
             sub_content = replace_parameters(sub_content, params)
-            # 也为子程序添加checkpoint配置
-            sub_content = add_checkpoint_to_outputs(sub_content)
             sub_output = os.path.join(case_dir, f"sub_{case_name}.i")
             with open(sub_output, 'w') as f:
                 f.write(sub_content)
