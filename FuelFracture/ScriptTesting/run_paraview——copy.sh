@@ -70,6 +70,6 @@ fi
 # 5. 运行处理脚本
 echo "执行处理脚本..."
 cd "$SCRIPT_DIR"
-python "$SCRIPT_DIR/step4_paraview_processor.py"
+python "$SCRIPT_DIR/paraview_processor.py"
 
 echo "✅ 处理完成"

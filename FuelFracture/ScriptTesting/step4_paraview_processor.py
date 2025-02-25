@@ -23,7 +23,8 @@ DEFAULT_CONFIG = ExportConfig(
     field_list=[
         ('T', '温度'),
         ('hoop_stress', '环向应力'),
-        ('thermal_hoop_strain', '环向热应变')
+        ('thermal_hoop_strain', '环向热应变'),
+        ('mechanical_hoop_strain', '环向机械应变')
     ],
     image_size=(1642, 1083),
     output_dir_name="post_results"
