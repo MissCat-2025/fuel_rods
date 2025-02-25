@@ -19,11 +19,11 @@ ExportConfig = namedtuple('ExportConfig', [
 
 # 默认配置
 DEFAULT_CONFIG = ExportConfig(
-    target_times=[300000,100000],
+    target_times=[4.0, 5.0, 6.0],
     field_list=[
         ('T', '温度'),
         ('hoop_stress', '环向应力'),
-        ('d', '裂纹'),
+        ('thermal_hoop_strain', '环向热应变'),
         ('mechanical_hoop_strain', '环向机械应变')
     ],
     image_size=(1642, 1083),

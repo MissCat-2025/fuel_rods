@@ -5,10 +5,10 @@ import itertools
 from datetime import datetime
 
 # 基础配置
-base_dir = '/home/yp/projects/raccoon/FuelFracture/ScriptTesting'
+base_dir = '/home/yp/projects/raccoon/FuelFracture/Annular/Liwei2022/MaterialParametersVerification/step5_ThermalCreepFracture_AllEigenstrain'
 # 主程序模板文件与子程序模板文件相同，则是单程序模式
-template_main = os.path.join(base_dir, 'NoClad3D_ThermalCreepFracture.i')
-template_sub = os.path.join(base_dir, 'NoClad3D_ThermalCreepFracture_Sub.i')
+template_main = os.path.join(base_dir, 'NoClad3D_quarter_ThermalCreepFracture_AllEigenstrainStaggered.i')
+template_sub = os.path.join(base_dir, 'NoClad3D_quarter_ThermalCreepFracture_AllEigenstrainStaggered_SubApp.i')
 output_dir = os.path.join(base_dir, 'parameter_studies')
 
 # Checkpoint配置，加入存档功能
@@ -22,16 +22,15 @@ checkpoint_config = '''
 
 # 参数矩阵定义 (在此修改需要研究的参数)
 parameter_matrix = {
-    'Gf': [8,10],
-    'length_scale_paramete': [5e-5,10e-5],
-    'power_factor_mod': [1,2,3],
+    'Gf': [1,3,10],
+    'length_scale_paramete': [1e-5,2e-5,8e-5],
 }
 
 # 排除列表：已知无法运行的参数组合
 # 格式：每个元组包含参数名和对应的值
 exclude_combinations = [
-    ('Gf', 8, 'length_scale_paramete', 10e-5, 'power_factor_mod', 3),  # 示例：排除 Gf=8, length_scale_paramete=6e-5 的组合
-    ('Gf', 10, 'length_scale_paramete', 5e-5),  # 示例：排除另一个组合
+    ('Gf', 1, 'length_scale_paramete', 8e-5),  # 示例：排除 Gf=8, length_scale_paramete=6e-5 的组合
+    ('Gf', 10, 'length_scale_paramete', 1e-5),  # 示例：排除另一个组合
 ]
 
 def should_exclude_combination(params):
