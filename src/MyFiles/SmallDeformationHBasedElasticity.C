@@ -106,6 +106,14 @@ SmallDeformationHBasedElasticity::computeStress(const ADRankTwoTensor & strain)
   _psie_active[_qp] = _H[_qp];
   _psie[_qp] = _g[_qp] * _psie_active[_qp];
   _dpsie_dd[_qp] = _dg_dd[_qp] * _psie_active[_qp];
+  // 当_qp为0时，输出_dpsie_dd[_qp]
+  // if (_qp == 0)
+  // {
+  //   Moose::out << "\n=== 损伤演化导数: "
+  //              << "\n_dpsie_dd: " << MetaPhysicL::raw_value(_dpsie_dd[_qp]) << "\n"
+  //              << "\n_dg_dd: " << MetaPhysicL::raw_value(_dg_dd[_qp]) << "\n"
+  //              << "\n================================";
+  // }
 
   return stress;
 }
