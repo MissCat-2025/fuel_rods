@@ -1,0 +1,134 @@
+[Problem]
+  kernel_coverage_check = false
+  material_coverage_check = false
+[]
+
+[Mesh]
+  [fmg]
+    type = FileMeshGenerator
+    file = 'plate.msh'
+  []
+[]
+
+[Adaptivity]
+  marker = marker
+  initial_marker = marker
+  initial_steps = 2
+  stop_time = 0
+  max_h_level = 3
+  [Markers]
+    [marker]
+      type = BoxMarker
+      bottom_left = '27 7 0'
+      top_right = '70 28 0'
+      inside = REFINE
+      outside = DO_NOTHING
+    []
+  []
+[]
+
+[Variables]
+  [d]
+    block = glass
+  []
+[]
+
+[AuxVariables]
+  [bounds_dummy]
+    block = glass
+  []
+  [dpsie_dd]
+    block = glass
+  []
+[]
+[Bounds]
+  [irreversibility]
+    type = VariableOldValueBounds
+    variable = bounds_dummy
+    bounded_variable = d
+    bound_type = lower
+    block = glass
+  []
+  [upper]
+    type = ConstantBounds
+    variable = bounds_dummy
+    bounded_variable = d
+    bound_type = upper
+    bound_value = 1
+    block = glass
+  []
+[]
+
+[Kernels]
+  [diff]
+    type = ADPFFDiffusion
+    variable = d
+    fracture_toughness = Gc
+    regularization_length = l
+    normalization_constant = c0
+    block = glass
+  []
+  [source]
+    type = ADMyPFFSource
+    variable = d
+    fracture_energy = Gc
+    crack_geometric = l
+    normalization_constant = c0
+    CrackDrivingForce = CrackDrivingForce
+    block = glass
+  []
+[]
+
+[Materials]
+  [fracture_properties]
+    type = ADGenericConstantMaterial
+    prop_names = 'Gc a1 l'
+    prop_values = '${Gc} ${a1} ${l}'
+    block = glass
+  []
+  [crack_geometric]
+    type = CrackGeometricFunction
+    property_name = alpha
+    expression = '2*d-d*d'
+    phase_field = d
+    block = glass
+  []
+  [degradation]
+    type = RationalDegradationFunction
+    property_name = g
+    expression = (1-d)^p/((1-d)^p+a1*d*(1+a2*d+a3*d^2))
+    phase_field = d
+    material_property_names = 'a1'
+    parameter_names = 'p a2 a3'
+    parameter_values = '2 -0.5 0'
+    block = glass
+  []
+  [CrackDrivingForce]
+    type = ADParsedMaterial
+    property_name = CrackDrivingForce
+    coupled_variables = 'dpsie_dd'
+    expression = '-dpsie_dd'
+    output_properties = 'CrackDrivingForce'
+    outputs = exodus
+    block = glass
+  []
+[]
+
+[Executioner]
+  type = Transient
+
+  solve_type = PJFNK
+  petsc_options_iname = '-ksp_gmres_restart -pc_type -pc_hypre_type  -snes_type'
+  petsc_options_value = '201                hypre    boomeramg  vinewtonrsls'  
+  automatic_scaling = true
+
+  nl_rel_tol = 1e-7
+  nl_abs_tol = 1e-8
+  dt = 10
+  end_time = 1000
+[]
+
+[Outputs]
+  exodus = true
+  print_linear_residuals = false
+[]
