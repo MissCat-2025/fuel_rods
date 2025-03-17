@@ -1,0 +1,2 @@
+@echo off
+powershell -Command "Start-Process powershell -Verb RunAs -ArgumentList '-NoProfile -ExecutionPolicy Bypass -Command \"wsl --update; wsl --set-default-version 2; curl.exe -L -o ubuntu-2004.appx https://aka.ms/wslubuntu2004; Add-AppxPackage .\Ubuntu.appx; Write-Host \\\"WSL has been updated, default version set to WSL 2, and Ubuntu 20.04 has been downloaded and installed. You can now launch Ubuntu from the Start menu.\\\" -ForegroundColor Green; Read-Host \\\"Press Enter to exit\\\"\"'" 

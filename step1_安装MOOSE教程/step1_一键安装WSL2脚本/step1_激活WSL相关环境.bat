@@ -1,0 +1,2 @@
+@echo off
+powershell -Command "Start-Process powershell -Verb RunAs -ArgumentList '-NoProfile -ExecutionPolicy Bypass -Command \"Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Windows-Subsystem-Linux; Enable-WindowsOptionalFeature -Online -FeatureName VirtualMachinePlatform; Write-Host \\\"Windows Subsystem for Linux and Virtual Machine Platform have been successfully enabled. Please restart your computer to complete the installation.\\\" -ForegroundColor Green; Read-Host \\\"Press Enter to exit\\\"\"'" 
