@@ -2,6 +2,8 @@
 
 我的中文版零基础moose教程，热力耦合的燃料芯块模拟。
 
+# 第一章，安装
+
 ## 第一步：安装WSL
 
 （用终端脚本下载太慢了，这里没有做脚本）
@@ -87,7 +89,6 @@ chmod +x step2_install_moose_software.sh
 
 ## 第四步：安装MOOSE本体
 
-
 在cursor显示的终端：
 
 ![1742206569067](image/README/1742206569067.png)
@@ -103,3 +104,42 @@ chmod +x step2_install_moose_software.sh
 ![1742208907135](image/README/1742208907135.png)
 
 的类似的结果就可以放心了，这下moose就完全安装好了
+
+
+# 第二章，更新
+
+应始终对Conda和MOOSE存储库进行更新。
+
+且如果更新conda环境，请始终更新配套的moose版本：
+
+## 更新conda：
+
+《conda activate moose》
+
+《conda update –all》
+
+## 更新MOOSE存储库
+
+请使用以下命令：
+
+《cd ~/projects/moose》
+
+《git fetch origin》
+
+《git rebase origin/master》
+
+
+## git更新
+
+运行git clone https://github.com/xxx.git的时候一直下不下来，可以用：
+
+《sudo apt-get update》
+
+《sudo apt-get install --reinstall ca-certificates》
+
+《sudo apt-get upgrade git》
+
+可以试用这几条解决
+
+
+# 接下来的MOOSE具体教程请看【fuel_rods/MOOSE手把手教程.md】
