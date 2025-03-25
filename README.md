@@ -142,4 +142,4 @@ chmod +x step2_install_moose_software.sh
 可以试用这几条解决
 
 
-# 接下来的MOOSE具体教程请看【fuel_rods/MOOSE手把手教程.md】
+# 接下来的MOOSE具体教程请看fuel_rods/MOOSE零基础总教程/MOOSE基础知识-整体xxx.docx
