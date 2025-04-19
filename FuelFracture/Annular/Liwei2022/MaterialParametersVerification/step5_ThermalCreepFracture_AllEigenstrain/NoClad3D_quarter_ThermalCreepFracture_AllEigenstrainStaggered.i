@@ -92,7 +92,7 @@ pellet_outer_radius = '${fparse pellet_outer_diameter/2*1e-3}'
 [MultiApps]
   [fracture]
     type = TransientMultiApp
-    input_files = 'NoClad3D_quarter_ThermalCreepFracture_AllEigenstrainStaggered_SubApp.i'
+    input_files = 'NoClad3D_quarter_ThermalCreepFracture_AllEigenstrainStaggered_Sub.i'
     cli_args = 'Gc=${pellet_critical_energy};l=${length_scale_paramete};E0=${pellet_elastic_constants}'
     execute_on = 'TIMESTEP_END'
     # 强制同步参数
@@ -347,8 +347,8 @@ pellet_outer_radius = '${fparse pellet_outer_diameter/2*1e-3}'
     #定义芯块热导率、密度、比热等材料属性
     [pellet_properties2]
       type = ADGenericConstantMaterial
-      prop_names = 'K G l Gc E0 density'
-      prop_values = '${pellet_K} ${pellet_G} ${length_scale_paramete} ${pellet_critical_energy} ${pellet_elastic_constants} ${pellet_density}'
+      prop_names = 'K G l Gc E0 density nu'
+      prop_values = '${pellet_K} ${pellet_G} ${length_scale_paramete} ${pellet_critical_energy} ${pellet_elastic_constants} ${pellet_density} ${pellet_nu}'
       block = pellet
     []
     # 为临界断裂强度生成威布尔分布
@@ -380,7 +380,7 @@ pellet_outer_radius = '${fparse pellet_outer_diameter/2*1e-3}'
       coupled_variables = 'd'  # 声明依赖的变量
       functor_names = 'power_history'  # 声明使用的函数
       functor_symbols = 'P'  # 为函数指定符号名称
-      expression = 'P * (1-0.1*d)'  # 直接使用函数符号进行计算
+      expression = 'P * (1-0.05*d)'  # 直接使用函数符号进行计算
       derivative_order = 1  # 需要计算导数时指定
       block = pellet
       output_properties = 'total_power'
@@ -426,7 +426,7 @@ pellet_outer_radius = '${fparse pellet_outer_diameter/2*1e-3}'
       property_name = densification_coef
       coupled_variables = 'T'
       material_property_names = 'CD_factor burnup'
-      expression = '0.001 * (exp(-4.605 * (burnup*1) / (CD_factor * 0.006024)) - 1)/3'# 0.6024是5000MWd/tU的转换系数
+      expression = '0.005 * (exp(-4.605 * (burnup*1) / (CD_factor * 0.006024)) - 1)/3'# 0.6024是5000MWd/tU的转换系数
       block = pellet
     []
         # 肿胀应变计算
@@ -504,13 +504,25 @@ pellet_outer_radius = '${fparse pellet_outer_diameter/2*1e-3}'
       phase_field = d
       block = pellet
     []
+    # [pellet_elasticity]
+    #   type = SmallDeformationIsotropicElasticity
+    #   bulk_modulus = K
+    #   shear_modulus = G
+    #   phase_field = d
+    #   degradation_function = g
+    #   decomposition = SPECTRAL
+    #   output_properties = 'psie_active'
+    #   outputs = exodus
+    #   block = pellet
+    # []
     [pellet_elasticity]
-      type = SmallDeformationIsotropicElasticity
-      bulk_modulus = K
-      shear_modulus = G
+      type = SmallDeformationHBasedElasticity
+      youngs_modulus = E0
+      poissons_ratio = nu
+      tensile_strength = sigma0
+      fracture_energy = Gc
       phase_field = d
       degradation_function = g
-      decomposition = SPECTRAL
       output_properties = 'psie_active'
       outputs = exodus
       block = pellet
@@ -524,44 +536,44 @@ pellet_outer_radius = '${fparse pellet_outer_diameter/2*1e-3}'
 # 线密度转为体积密度的转换系数
 power_factor = '${fparse 1000*1/3.1415926/(pellet_outer_radius^2-pellet_inner_radius^2)}' #新加的！！！！！！！！！！！！！！！！！！！！！！
 [Functions]
-  # [power_history] #新加的！！！！！！！！！！！！！！！！！！！！！！
-  #   type = PiecewiseLinear #论文的功率历史
-  #   x = '0          864000   6912000   8208000'
-  #   y = '0.1          105     75     0'
-  #   scale_factor = ${power_factor}         # 保持原有的转换因子
-  #   # 论文中只给了线密度，需要化为体积密度
-  # []
+  [power_history] #新加的！！！！！！！！！！！！！！！！！！！！！！
+    type = PiecewiseLinear #论文的功率历史
+    x = '0          864000   6912000   8208000'
+    y = '0.1          105     75     0'
+    scale_factor = ${power_factor}         # 保持原有的转换因子
+    # 论文中只给了线密度，需要化为体积密度
+  []
   [gap_pressure] #新加的！！！！！！！！！！！！！！！！！！！！！！
   #间隙压力随时间的变化
   type = PiecewiseLinear
-  x = '0 1100000'
+  x = '0 9100000'
   y = '2.0 12'
   scale_factor = 1
   []
   [gap_conductance]
     type = PiecewiseLinear
-    x = '0 1100000'
+    x = '0 9100000'
     y = '3500 3000'
     scale_factor = 1         # 保持原有的转换因子
   []
-  [power_history] #新加的！！！！！！！！！！！！！！！！！！！！！！
-  type = PiecewiseLinear #论文的功率历史
-  x = '0 864000 950000 1000000   '
-  y = '0 105 100 0'
-  scale_factor = ${power_factor}         # 保持原有的转换因子
-  # 论文中只给了线密度，需要化为体积密度
-  []
+  # [power_history] #新加的！！！！！！！！！！！！！！！！！！！！！！
+  # type = PiecewiseLinear #论文的功率历史
+  # x = '0 864000 950000 1000000   '
+  # y = '0 105 100 0'
+  # scale_factor = ${power_factor}         # 保持原有的转换因子
+  # # 论文中只给了线密度，需要化为体积密度
+  # []
   [dt_limit_func]
     type = ParsedFunction
     expression = 'if(t < 300000, 50000,
-                   if(t < 950000,
-                      if(abs(d_increment) < 1e-3, 20000,
-                         if(abs(d_increment) < 5e-3, 10000,
-                            if(abs(d_increment) < 1e-2, 5000,
-                               if(abs(d_increment) < 5e-2, 2500,
-                                  if(abs(d_increment) < 1e-1, 1000, 500)))))
-                      ,
+                   if(t < 6950000,
                       if(abs(d_increment) < 1e-3, 10000,
+                         if(abs(d_increment) < 5e-3, 5000,
+                            if(abs(d_increment) < 1e-2, 2500,
+                               if(abs(d_increment) < 5e-2, 1000,
+                                  if(abs(d_increment) < 1e-1, 500, 100)))))
+                      ,
+                      if(abs(d_increment) < 1e-3, 7500,
                          if(abs(d_increment) < 5e-3, 5000,
                             if(abs(d_increment) < 1e-2, 2500,
                                if(abs(d_increment) < 5e-2, 1000,
@@ -593,20 +605,20 @@ power_factor = '${fparse 1000*1/3.1415926/(pellet_outer_radius^2-pellet_inner_ra
 
 [Executioner]
     type = Transient
-    solve_type = 'PJFNK'
+    solve_type = 'NEWTON'
     petsc_options_iname = '-pc_type -pc_factor_mat_solver_package -ksp_type'
     petsc_options_value = 'lu superlu_dist gmres'
     accept_on_max_fixed_point_iteration = true # 达到最大迭代次数时接受解
     automatic_scaling = true # 启用自动缩放功能，有助于改善病态问题的收敛性
     compute_scaling_once = true  # 每个时间步都重新计算缩放
     nl_max_its = 30
-    nl_rel_tol = 1e-6 # 非线性求解的相对容差
-    nl_abs_tol = 1e-8 # 非线性求解的绝对容差
+    nl_rel_tol = 5e-7 # 非线性求解的相对容差
+    nl_abs_tol = 1e-7 # 非线性求解的绝对容差
     l_tol = 1e-7  # 线性求解的容差
-    l_abs_tol = 1e-9 # 线性求解的绝对容差
+    l_abs_tol = 1e-8 # 线性求解的绝对容差
     l_max_its = 150 # 线性求解的最大迭代次数
     dtmin = 1
-    end_time = 1100000
+    end_time = 9500000
 
     [TimeStepper]
       type = FunctionDT

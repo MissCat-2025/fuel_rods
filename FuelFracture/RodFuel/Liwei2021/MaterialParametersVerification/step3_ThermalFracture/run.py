@@ -5,7 +5,7 @@ import time
 from datetime import datetime
 
 # 基础配置
-base_dir = '/home/yp/projects/raccoon/FuelFracture/RodFuel/Liwei2021/MaterialParametersVerification/step3/MultiApp'
+base_dir = '/home/yp/projects/raccoon/FuelFracture/RodFuel/Liwei2021/MaterialParametersVerification/step3_ThermalFracture'
 output_dir = os.path.join(base_dir, 'parameter_studies')
 moose_app = "/home/yp/projects/raccoon/raccoon-opt"
 mpi_processes = 12  # MPI进程数

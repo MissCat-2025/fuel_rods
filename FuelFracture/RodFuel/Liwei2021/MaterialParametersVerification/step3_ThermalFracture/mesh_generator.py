@@ -5,7 +5,7 @@ import itertools
 from datetime import datetime
 
 # 基础配置
-base_dir = 'projects/raccoon/FuelFracture/RodFuel/Liwei2021/MaterialParametersVerification/step3/MultiApp'
+base_dir = '/home/yp/projects/raccoon/FuelFracture/RodFuel/Liwei2021/MaterialParametersVerification/step3_ThermalFracture'
 template_main = os.path.join(base_dir, 'NoClad3D_ThermallFracture.i')
 template_sub = os.path.join(base_dir, 'NoClad3D_ThermallFracture_Sub.i')
 output_dir = os.path.join(base_dir, 'parameter_studies')

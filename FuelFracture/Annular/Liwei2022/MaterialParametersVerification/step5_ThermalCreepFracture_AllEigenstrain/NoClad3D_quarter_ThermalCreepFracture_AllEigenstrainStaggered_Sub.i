@@ -216,7 +216,7 @@ pellet_outer_radius = '${fparse pellet_outer_diameter/2*1e-3}'
     l_abs_tol = 1e-9 # 线性求解的绝对容差
     l_max_its = 150 # 线性求解的最大迭代次数
     dtmin = 1
-    end_time = 1100000
+    end_time = 9500000
     
     [TimeStepper]
       type = FunctionDT
@@ -246,15 +246,15 @@ pellet_outer_radius = '${fparse pellet_outer_diameter/2*1e-3}'
   [Functions]
     [dt_limit_func]
       type = ParsedFunction
-      expression = 'if(t < 250000, 50000,
-                     if(t < 900000,
-                        if(abs(d_increment) < 1e-3, 20000,
-                           if(abs(d_increment) < 5e-3, 10000,
-                              if(abs(d_increment) < 1e-2, 5000,
-                                 if(abs(d_increment) < 5e-2, 2500,
-                                    if(abs(d_increment) < 1e-1, 1000, 500)))))
-                        ,
+      expression = 'if(t < 300000, 50000,
+                     if(t < 6950000,
                         if(abs(d_increment) < 1e-3, 10000,
+                           if(abs(d_increment) < 5e-3, 5000,
+                              if(abs(d_increment) < 1e-2, 2500,
+                                 if(abs(d_increment) < 5e-2, 1000,
+                                    if(abs(d_increment) < 1e-1, 500, 100)))))
+                        ,
+                        if(abs(d_increment) < 1e-3, 7500,
                            if(abs(d_increment) < 5e-3, 5000,
                               if(abs(d_increment) < 1e-2, 2500,
                                  if(abs(d_increment) < 5e-2, 1000,

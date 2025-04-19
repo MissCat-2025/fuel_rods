@@ -2,7 +2,7 @@
 # 语法要求：仅仅为了生成网格文件：Run with --mesh-only:
 #https://mooseframework.inl.gov/source/meshgenerators/ConcentricCircleMeshGenerator.html
 # conda activate moose
-# mpirun -n 10 ../../../../../raccoon-opt -i NoClad2D.i --mesh-only KAERI_HANARO_UpperRod1_NoClad2D.e
+# mpirun -n 10 /home/yp/projects/raccoon/raccoon-opt -i NoClad2D.i --mesh-only KAERI_HANARO_UpperRod1_NoClad2D.e
 #《《下面数据取自[1]Thermomechanical Analysis and Irradiation Test of Sintered Dual-Cooled Annular pellet》》
 
 # 双冷却环形燃料几何参数 (单位：mm)(无内外包壳)

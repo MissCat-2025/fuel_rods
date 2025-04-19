@@ -25,6 +25,8 @@
     order = CONSTANT
     family = MONOMIAL
   []
+  [bounds_dummy]
+  []
 []
 [Kernels]
   [diff]
@@ -40,7 +42,21 @@
     free_energy = psi
   []
 []
-
+[Bounds]
+  [irreversibility]
+    type = VariableOldValueBounds
+    variable = bounds_dummy
+    bounded_variable = d
+    bound_type = lower
+  []
+  [upper]
+    type = ConstantBounds
+    variable = bounds_dummy
+    bounded_variable = d
+    bound_type = upper
+    bound_value = 1
+  []
+[]
 [Materials]
   [fracture_properties]
     type = ADGenericConstantMaterial
@@ -58,11 +74,11 @@
   [degradation]
     type = RationalDegradationFunction
     property_name = g
-    expression = (1-d)^p/((1-d)^p+a1*d*(1+a2*d+a3*d^2))*(1-eta)+eta
+    expression = (1-d)^p/((1-d)^p+a1*d*(1+a2*d+a3*d^2))
     phase_field = d
     material_property_names = 'a1'
-    parameter_names = 'p a2 a3 eta '
-    parameter_values = '2 -0.5 0 1e-6'
+    parameter_names = 'p a2 a3'
+    parameter_values = '2 -0.5 0'
   []
   
   [psi]
@@ -83,8 +99,8 @@
   type = Transient
   
   solve_type = NEWTON
-  petsc_options_iname = '-ksp_gmres_restart -pc_type -pc_hypre_type'
-  petsc_options_value = '201                hypre    boomeramg'
+  petsc_options_iname = '-ksp_gmres_restart -pc_type -pc_hypre_type -snes_type'
+  petsc_options_value = '201                hypre    boomeramg vinewtonrsls'
   automatic_scaling = true
   
   nl_rel_tol = 1e-7

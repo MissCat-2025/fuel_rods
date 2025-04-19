@@ -79,11 +79,6 @@ a1 = '${fparse 4*E_steel*Gc/ft/ft/3.14159/l}'
   [T]
     initial_condition = 1000
   []
-  [psie_active]
-    order = CONSTANT
-    family = MONOMIAL
-    block = glass
-  []
 []
 
 [AuxKernels]
@@ -91,12 +86,6 @@ a1 = '${fparse 4*E_steel*Gc/ft/ft/3.14159/l}'
     type = FunctionAux
     variable = T
     function = '1000-2*t'
-  []
-  [psie_active]
-    type = ADMaterialRealAux
-    variable = psie_active
-    property = psie_active
-    block = glass
   []
 []
 
@@ -174,6 +163,8 @@ a1 = '${fparse 4*E_steel*Gc/ft/ft/3.14159/l}'
     fracture_energy = Gc
     phase_field = d
     degradation_function = g
+    output_properties = 'psie_active'
+    outputs = exodus
     block = glass
   []
   [stress_glass]

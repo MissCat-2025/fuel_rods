@@ -34,9 +34,9 @@
 []
 
 [AuxVariables]
-  # [bounds_dummy]
-  #   block = glass
-  # []
+  [bounds_dummy]
+    block = glass
+  []
   [psie_active]
     order = CONSTANT
     family = MONOMIAL
@@ -44,23 +44,23 @@
   []
 []
 
-# [Bounds]
-#   [irreversibility]
-#     type = VariableOldValueBounds
-#     variable = bounds_dummy
-#     bounded_variable = d
-#     bound_type = lower
-#     block = glass
-#   []
-#   [upper]
-#     type = ConstantBounds
-#     variable = bounds_dummy
-#     bounded_variable = d
-#     bound_type = upper
-#     bound_value = 1
-#     block = glass
-#   []
-# []
+[Bounds]
+  [irreversibility]
+    type = VariableOldValueBounds
+    variable = bounds_dummy
+    bounded_variable = d
+    bound_type = lower
+    block = glass
+  []
+  [upper]
+    type = ConstantBounds
+    variable = bounds_dummy
+    bounded_variable = d
+    bound_type = upper
+    bound_value = 1
+    block = glass
+  []
+[]
 
 [Kernels]
   [diff]
@@ -133,6 +133,6 @@
 []
 
 [Outputs]
-  exodus = true
+  # exodus = true
   print_linear_residuals = false
 []

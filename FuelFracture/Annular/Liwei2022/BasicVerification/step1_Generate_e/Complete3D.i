@@ -1,7 +1,7 @@
 # (已验证)这第一步就是测试生成网格文件KAERI_HANARO_UpperRod1.e   注意：这文件生成的是完整的3D模型，而不是1/4模型3D模型
 # 语法要求：仅仅为了生成网格文件：Run with --mesh-only:
 #https://mooseframework.inl.gov/source/meshgenerators/ConcentricCircleMeshGenerator.html
-#mpirun -n 10 ../../../../../raccoon-opt -i Complete3D.i --mesh-only KAERI_HANARO_UpperRod1.e
+#mpirun -n 10 /home/yp/projects/raccoon/raccoon-opt -i Complete3D.i --mesh-only KAERI_HANARO_UpperRod1.e
 #《《下面数据取自[1]Thermomechanical Analysis and Irradiation Test of Sintered Dual-Cooled Annular pellet》》
 
 # 双冷却环形燃料几何参数 (单位：mm)

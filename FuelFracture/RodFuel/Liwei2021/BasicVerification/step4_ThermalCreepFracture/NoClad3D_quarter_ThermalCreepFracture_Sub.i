@@ -116,8 +116,8 @@ n_elems_radial_pellet = '${fparse int(pellet_outer_radius/grid_sizes)}'         
   [Materials]
     [fracture_properties]
       type = ADGenericConstantMaterial
-      prop_names = 'l Gc E0'
-      prop_values = '${l} ${Gc} ${E0}'
+      prop_names = 'l Gc a1'
+      prop_values = '${l} ${Gc} ${a1}'
       block = pellet
     []
     [sigma0_mat]
@@ -130,11 +130,11 @@ n_elems_radial_pellet = '${fparse int(pellet_outer_radius/grid_sizes)}'         
     [degradation]
       type = RationalDegradationFunction
       property_name = g
-      expression = (1-d)^p/((1-d)^p+(1.5*E0*Gc/sigma0^2)/l*d*(1+a2*d))*(1-eta)+eta
+      expression = (1-d)^p/((1-d)^p+a1*d*(1+a2*d+a3*d^2))*(1-eta)+eta
       phase_field = d
-      material_property_names = 'Gc sigma0 l E0'
-      parameter_names = 'p a2 eta'
-      parameter_values = '2 2 1e-6'
+      material_property_names = 'a1'
+      parameter_names = 'p a2 a3 eta'
+      parameter_values = '2.5 3.1748 0 1e-6' #指数软化
       block = pellet
     []
     [crack_geometric]
@@ -156,16 +156,7 @@ n_elems_radial_pellet = '${fparse int(pellet_outer_radius/grid_sizes)}'         
   
   [Executioner]
     type = Transient
-  
-    # solve_type = NEWTON
-    solve_type = PJFNK
-    # petsc_options_iname = '-pc_type -pc_factor_mat_solver_package -snes_type'
-    # petsc_options_value = 'lu       superlu_dist                  vinewtonrsls'
-    
-      # -pc_type lu: 使用LU分解作为预处理器
-    # -pc_factor_mat_solver_package superlu_dist: 使用分布式SuperLU作为矩阵求解器
-    # petsc_options_iname = '-pc_type -pc_factor_mat_solver_package -snes_type'
-    # petsc_options_value = 'lu       superlu_dist                 vinewtonrsls'
+    solve_type = NEWTON
     petsc_options_iname = '-ksp_gmres_restart -pc_type -pc_hypre_type  -snes_type'
     petsc_options_value = '201                hypre    boomeramg  vinewtonrsls'  
     automatic_scaling = true # 启用自动缩放功能，有助于改善病态问题的收敛性
@@ -179,56 +170,13 @@ n_elems_radial_pellet = '${fparse int(pellet_outer_radius/grid_sizes)}'         
     l_max_its = 150 # 线性求解的最大迭代次数
     accept_on_max_fixed_point_iteration = true # 达到最大迭代次数时接受解
     dtmin = 50
-    dt = 10000 # 时间步长3600s
+    dt = 4000 # 时间步长3600s
     end_time = 3e5 # 总时间24h
   
     fixed_point_rel_tol =1e-4 # 固定点迭代的相对容差
-    [TimeStepper]
-      type = FunctionDT
-      function = dt_limit_func
-    []
-  []
-  [Postprocessors]
-    [d_average]
-      type = ElementAverageValue
-      variable = d
-      # value_type = average
-      execute_on = 'initial timestep_end'
-      block = pellet
-    []
-    [d_increment]
-      type = ChangeOverTimePostprocessor
-      change_with_respect_to_initial = false
-      postprocessor = d_average
-      execute_on = 'initial timestep_end'
-    []
-    [dt_limit]
-      type = FunctionValuePostprocessor
-      function = dt_limit_func
-      execute_on = 'TIMESTEP_BEGIN'
-    []
   []
   
-  [Functions]
-    [dt_limit_func]
-      type = ParsedFunction
-      expression = 'if(t <20000,5000,
-                      if(t <95000,
-                        if(abs(d_increment) < 1e-3,5000, 
-                          if(abs(d_increment) < 5e-3,2500, 
-                            if(abs(d_increment) < 1e-2,2000, 
-                              if(abs(d_increment) < 5e-2,1000, 
-                                if(abs(d_increment) < 1e-1,500,100))))),
-                        if(abs(d_increment) < 1e-3,2000, 
-                          if(abs(d_increment) < 5e-3,1000, 
-                            if(abs(d_increment) < 1e-2,500, 
-                              if(abs(d_increment) < 5e-2,250, 
-                                if(abs(d_increment) < 1e-1,100,50)))))))'
-      symbol_names = 'd_increment'
-      symbol_values = 'd_increment'
-    []
-  []
-  
+
   [Outputs]
     print_linear_residuals = false
   []

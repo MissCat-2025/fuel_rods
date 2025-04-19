@@ -8,9 +8,9 @@
 pellet_inner_diameter = 10.291         # 芯块内直径
 pellet_outer_diameter = 14.627         # 芯块外直径
 length = 6e-5                    # 轴向长度(m)
-# 最大网格尺寸为6.0e-5m
-n_radial_pellet = 36          # 燃料径向单元数
-n_azimuthal = 768           # 周向基础单元数
+# 75\1600最大网格尺寸为2.9e-5m
+n_radial_pellet = 75          # 燃料径向单元数
+n_azimuthal = 1600           # 周向基础单元数
 growth_factor = 1.0        # 径向增长因子
 n_axial = 1                # 轴向单元数
 # 计算半径参数 (转换为米)

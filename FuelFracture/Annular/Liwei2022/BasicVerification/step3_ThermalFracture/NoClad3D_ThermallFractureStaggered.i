@@ -1,4 +1,4 @@
-# mpirun -n 16 ../../../../../../raccoon-opt -i NoClad3D_ThermallFractureStaggered.i
+# mpirun -n 16 /home/yp/projects/raccoon/raccoon-opt -i NoClad3D_ThermallFractureStaggered.i
 
 pellet_density=10431.0#10431.0*0.85#kg⋅m-3
 pellet_elastic_constants=2.2e11#Pa
@@ -174,26 +174,28 @@ normal_tol = '${fparse 3.14*pellet_inner_diameter/n_azimuthal*1e-3/10}'
     execute_on = 'TIMESTEP_END'
   [../]
   [./thermal_strain]
-    type = ADRankTwoAux
+    type = ADRankTwoScalarAux
     variable = thermal_hoop_strain
     rank_two_tensor = thermal_eigenstrain
-    index_i = 2
-    index_j = 2  # zz分量对应环向
+    scalar_type = HoopStress
+    point1 = '0 0 0'        # 圆心坐标
+    point2 = '0 0 -0.0178'        # 定义旋转轴方向（z轴）
     execute_on = 'TIMESTEP_END'
   [../]
     [./mechanical_strain]
-      type = ADRankTwoAux
+      type = ADRankTwoScalarAux
       variable = mechanical_hoop_strain
       rank_two_tensor = mechanical_strain
-      index_i = 2
-      index_j = 2
+      scalar_type = HoopStress
+      point1 = '0 0 0'        # 圆心坐标
+      point2 = '0 0 -0.0178'        # 定义旋转轴方向（z轴）
       execute_on = 'TIMESTEP_END'
     [../]
     [./total_strain]
       type = ADRankTwoScalarAux
       variable = total_hoop_strain
       rank_two_tensor = total_strain
-      scalar_type = VolumetricStrain
+      scalar_type = HoopStress
       point1 = '0 0 0'
       point2 = '0 0 -0.0178'
       execute_on = 'TIMESTEP_END'

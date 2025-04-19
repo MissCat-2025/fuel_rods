@@ -13,7 +13,7 @@ rho_ceramic = 3980      # 密度 (kg/m³)
 
 # 断裂参数
 Gc = 42.47               # 断裂能 (J/m^2)
-l = 0.06e-3                # 相场正则化长度 (m)
+l = 0.1e-3                # 相场正则化长度 (m)
 ft = 180e6                # 抗拉强度 (Pa)
 a1 = '${fparse 4*E_ceramic*Gc/ft/ft/3.14159/l}' 
 
@@ -141,11 +141,11 @@ a1 = '${fparse 4*E_ceramic*Gc/ft/ft/3.14159/l}'
   [degradation]
     type = RationalDegradationFunction
     property_name = g
-    expression = (1-d)^p/((1-d)^p+a1*d*(1+a2*d+a3*d^2))*(1-eta)+eta
+    expression = (1-d)^p/((1-d)^p+a1*d*(1+a2*d+a3*d^2))
     phase_field = d
     material_property_names = 'a1'
-    parameter_names = 'p a2 a3 eta'
-    parameter_values = '2 -0.5 0 1e-6'
+    parameter_names = 'p a2 a3'
+    parameter_values = '2 -0.5 0'
   []
   
   [eigenstrain]
@@ -223,4 +223,5 @@ a1 = '${fparse 4*E_ceramic*Gc/ft/ft/3.14159/l}'
 [Outputs]
   exodus = true
   print_linear_residuals = false
+  file_base = 'outputs/l=${l}'
 []

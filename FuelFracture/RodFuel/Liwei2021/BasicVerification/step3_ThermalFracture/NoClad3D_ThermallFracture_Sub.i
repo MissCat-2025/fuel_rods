@@ -158,7 +158,7 @@ n_elems_radial_pellet = '${fparse int(pellet_outer_radius/grid_sizes)}'         
     type = Transient
   
     # solve_type = NEWTON
-    solve_type = PJFNK
+    solve_type = NEWTON
     # petsc_options_iname = '-pc_type -pc_factor_mat_solver_package -snes_type'
     # petsc_options_value = 'lu       superlu_dist                  vinewtonrsls'
     

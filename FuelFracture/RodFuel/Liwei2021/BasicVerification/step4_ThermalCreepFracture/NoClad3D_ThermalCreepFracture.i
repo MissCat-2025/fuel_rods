@@ -465,13 +465,25 @@ normal_tol = '${fparse 3.14*pellet_outer_radius/n_elems_azimuthal*1e-3/100}'
       phase_field = d
       block = pellet
     []
+    # [pellet_elasticity]
+    #   type = SmallDeformationIsotropicElasticity
+    #   bulk_modulus = K
+    #   shear_modulus = G
+    #   phase_field = d
+    #   degradation_function = g
+    #   decomposition = SPECTRAL
+    #   output_properties = 'psie_active'
+    #   outputs = exodus
+    #   block = pellet
+    # []
     [pellet_elasticity]
-      type = SmallDeformationIsotropicElasticity
-      bulk_modulus = K
-      shear_modulus = G
+      type = SmallDeformationHBasedElasticity
+      youngs_modulus = E
+      poissons_ratio = nu
+      tensile_strength = sigma0
+      fracture_energy = Gc
       phase_field = d
       degradation_function = g
-      decomposition = SPECTRAL
       output_properties = 'psie_active'
       outputs = exodus
       block = pellet

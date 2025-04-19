@@ -18,4 +18,11 @@ protected:
   /// 累积的蠕变特征应变 - 旧值不需要AD
   ADMaterialProperty<RankTwoTensor> & _creep_strain;
   const MaterialProperty<RankTwoTensor> & _creep_strain_old;
+
+  // 添加psip_active和相关材料属性
+  ADMaterialProperty<Real> & _psip_active;
+  const MaterialProperty<Real> & _psip_active_old;
+
+  // 添加psip_active和相关材料属性
+  const ADMaterialProperty<RankTwoTensor> & _stress_deviator;
 };

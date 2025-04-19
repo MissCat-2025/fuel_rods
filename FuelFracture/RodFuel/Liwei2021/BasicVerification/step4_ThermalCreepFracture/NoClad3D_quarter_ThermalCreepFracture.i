@@ -3,15 +3,11 @@
 pellet_density=10431.0#10431.0*0.85#kg⋅m-3
 pellet_elastic_constants=2.1e11#Pa
 pellet_nu = 0.345
-# pellet_specific_heat=300
-# pellet_thermal_conductivity = 5
 pellet_thermal_expansion_coef=1e-5#K-1
-pellet_K = '${fparse pellet_elastic_constants/3/(1-2*pellet_nu)}'
-pellet_G = '${fparse pellet_elastic_constants/2/(1+pellet_nu)}'
-Gf = 10 #断裂能
+Gc = 3 #断裂能
 pellet_critical_fracture_strength=6.0e7#Pa
-length_scale_paramete=1e-4
-pellet_critical_energy=${fparse Gf} #J⋅m-2
+length_scale_paramete=5e-5
+a1 = '${fparse 4*pellet_elastic_constants*Gc/pellet_critical_fracture_strength/pellet_critical_fracture_strength/3.14159/length_scale_paramete}' 
 
 # 各种参数都取自[1]Multiphysics phase-field modeling of quasi-static cracking in urania ceramic nuclear fuel
 #几何与网格参数
@@ -71,12 +67,8 @@ n_elems_radial_pellet = '${fparse int(pellet_outer_radius/grid_sizes)}'         
   [fracture]
     type = TransientMultiApp
     input_files = 'NoClad3D_quarter_ThermalCreepFracture_Sub.i'
-    cli_args = 'Gc=${pellet_critical_energy};l=${length_scale_paramete};E0=${pellet_elastic_constants}'
+    cli_args = 'Gc=${Gc};l=${length_scale_paramete};a1=${a1}'
     execute_on = 'TIMESTEP_END'
-    # 强制同步参数
-    sub_cycling = false          # 禁止子循环
-    catch_up = false             # 禁止追赶步
-    max_failures = 0             # 严格同步模式
   []
 []
 
@@ -110,15 +102,7 @@ n_elems_radial_pellet = '${fparse int(pellet_outer_radius/grid_sizes)}'         
     order = CONSTANT
     family = MONOMIAL
   [../]
-  [./thermal_hoop_strain]
-    order = CONSTANT
-    family = MONOMIAL
-  [../]
   [./mechanical_hoop_strain]
-    order = CONSTANT
-    family = MONOMIAL
-  [../]
-  [./total_hoop_strain]
     order = CONSTANT
     family = MONOMIAL
   [../]
@@ -157,29 +141,12 @@ n_elems_radial_pellet = '${fparse int(pellet_outer_radius/grid_sizes)}'         
     point2 = '0 0 -0.0178'        # 定义旋转轴方向（z轴）
     execute_on = 'TIMESTEP_END'
   [../]
-  [./thermal_strain]
-    type = ADRankTwoAux
-    variable = thermal_hoop_strain
-    rank_two_tensor = thermal_eigenstrain
-    index_i = 2
-    index_j = 2  # zz分量对应环向
-    execute_on = 'TIMESTEP_END'
-  [../]
     [./mechanical_strain]
       type = ADRankTwoAux
       variable = mechanical_hoop_strain
       rank_two_tensor = mechanical_strain
       index_i = 2
       index_j = 2
-      execute_on = 'TIMESTEP_END'
-    [../]
-    [./total_strain]
-      type = ADRankTwoScalarAux
-      variable = total_hoop_strain
-      rank_two_tensor = total_strain
-      scalar_type = VolumetricStrain
-      point1 = '0 0 0'
-      point2 = '0 0 -0.0178'
       execute_on = 'TIMESTEP_END'
     [../]
     [copy_sigma0]
@@ -251,9 +218,9 @@ n_elems_radial_pellet = '${fparse int(pellet_outer_radius/grid_sizes)}'         
       variable = T
     []
     [Fheat_source]
-      type = ADMatHeatSource
+      type = HeatSource
       variable = T
-      material_property = total_power
+      function = power_history
       block = pellet
     []
     #化学平衡方程
@@ -289,35 +256,12 @@ n_elems_radial_pellet = '${fparse int(pellet_outer_radius/grid_sizes)}'         
     boundary = 'bottom'
     value = 0
   []
-  #芯块包壳间隙压力边界条件
-  [gap_pressure_fuel_x]
-    type = Pressure
-    variable = disp_x
-    boundary = 'pellet_outer'
-    factor = 1e6 # 间隙压力2.5MPa
-    function = gap_pressure #新加的！！！！！！！！！！！！！！！！！！！！！！
-    use_displaced_mesh = true
-  []
-  [gap_pressure_fuel_y]
-    type = Pressure
-    variable = disp_y
-    boundary = 'pellet_outer'
-    factor = 1e6
-    function = gap_pressure #新加的！！！！！！！！！！！！！！！！！！！！！！
-    use_displaced_mesh = true
-  []
-  [T_0BC]
-    type = NeumannBC
-    variable = T
-    boundary = 'xplane yplane'
-    value = 0
-  []
   [coolant_bc]#对流边界条件
     type = ConvectiveFluxFunction
     variable = T
     boundary = 'pellet_outer'
     T_infinity = 500
-    coefficient = gap_conductance#3500 W·m-2 K-1！！！！！！！！！！！！！！！！！！！！！！！！！！！
+    coefficient = 3440#3500 W·m-2 K-1！！！！！！！！！！！！！！！！！！！！！！！！！！！
   []
   #氧浓度边界条件
   [x_dirichlet_bc]
@@ -332,8 +276,8 @@ n_elems_radial_pellet = '${fparse int(pellet_outer_radius/grid_sizes)}'         
     #定义芯块热导率、密度、比热等材料属性
     [pellet_properties2]
       type = ADGenericConstantMaterial
-      prop_names = 'K G l Gc E0 density'
-      prop_values = '${pellet_K} ${pellet_G} ${length_scale_paramete} ${pellet_critical_energy} ${pellet_elastic_constants} ${pellet_density}'
+      prop_names = 'E nu l Gc a1 density'
+      prop_values = '${pellet_elastic_constants} ${pellet_nu} ${length_scale_paramete} ${Gc} ${a1} ${pellet_density}'
       block = pellet
     []
     # 为临界断裂强度生成威布尔分布
@@ -348,7 +292,7 @@ n_elems_radial_pellet = '${fparse int(pellet_outer_radius/grid_sizes)}'         
     type = ADParsedMaterial
     property_name = thermal_conductivity
     coupled_variables = 'T d'
-    expression = '(100/(7.5408 + 17.692*T/1000 + 3.6142*(T/1000)^2) + 6400/((T/1000)^2.5)*exp(-16.35/(T/1000)))*(1-0.2*d)'
+    expression = '(100/(7.5408 + 17.692*T/1000 + 3.6142*(T/1000)^2) + 6400/((T/1000)^2.5)*exp(-16.35/(T/1000)))*(1-0.05*d)'
     block = pellet
     []
     [pellet_specific_heat]
@@ -357,18 +301,6 @@ n_elems_radial_pellet = '${fparse int(pellet_outer_radius/grid_sizes)}'         
       coupled_variables = 'T'  # 需要在AuxVariables中定义Y变量
       expression = '(296.7 * 535.285^2 * exp(535.285/T))/(T^2 * (exp(535.285/T) - 1)^2) + 2.43e-2 * T + (2) * 8.745e7 * 1.577e5 * exp(-1.577e5/(8.314*T))/(2 * 8.314 * T^2)'
       block = pellet
-    []
-    [total_power]
-      type = ADDerivativeParsedMaterial
-      property_name = total_power
-      coupled_variables = 'd'  # 声明依赖的变量
-      functor_names = 'power_history'  # 声明使用的函数
-      functor_symbols = 'P'  # 为函数指定符号名称
-      expression = 'P * (1-0.3*d)'  # 直接使用函数符号进行计算
-      derivative_order = 1  # 需要计算导数时指定
-      block = pellet
-      output_properties = 'total_power'
-      outputs = exodus
     []
 
     [pellet_thermal_eigenstrain]
@@ -424,27 +356,28 @@ n_elems_radial_pellet = '${fparse int(pellet_outer_radius/grid_sizes)}'         
     [degradation]
       type = RationalDegradationFunction
       property_name = g
-      expression = (1-d)^p/((1-d)^p+(1.5*E0*Gc/sigma0^2)/l*d*(1+a2*d))*(1-eta)+eta
+      expression = (1-d)^p/((1-d)^p+a1*d*(1+a2*d+a3*d^2))*(1-eta)+eta
       phase_field = d
-      material_property_names = 'Gc sigma0 l E0'
-      parameter_names = 'p a2 eta'
-      parameter_values = '2 2 1e-6'
+      material_property_names = 'a1'
+      parameter_names = 'p a2 a3 eta'
+      parameter_values = '2.5 3.1748 0 1e-6' #指数软化
       block = pellet
     []
     [crack_geometric]
       type = CrackGeometricFunction
       property_name = alpha
-      expression = 'd'
+      expression = 'd' #为什么2d-d^2就无法收敛？
       phase_field = d
       block = pellet
     []
     [pellet_elasticity]
-      type = SmallDeformationIsotropicElasticity
-      bulk_modulus = K
-      shear_modulus = G
+      type = SmallDeformationHBasedElasticity
+      youngs_modulus = E
+      poissons_ratio = nu
+      tensile_strength = sigma0
+      fracture_energy = Gc
       phase_field = d
       degradation_function = g
-      decomposition = SPECTRAL
       output_properties = 'psie_active'
       outputs = exodus
       block = pellet
@@ -461,93 +394,33 @@ power_factor = '${fparse 1000*1/3.1415926/pellet_outer_radius/pellet_outer_radiu
   [power_history] #新加的！！！！！！！！！！！！！！！！！！！！！！
     type = PiecewiseLinear
     x = '0.0 100000 125000 175000 300000'
-    y = '0.0 18.0 35.0 35.0 0.0'
+    y = '0.0 18.0 34.0 34.0 0.0'
     scale_factor = ${power_factor}
-  []
-  [gap_conductance]
-    type = PiecewiseLinear
-    x = '0 300000'
-    y = '3400 3300'
-    scale_factor = 1         # 保持原有的转换因子
-  []
-  [gap_pressure] #新加的！！！！！！！！！！！！！！！！！！！！！！
-    #间隙压力随时间的变化
-    type = PiecewiseLinear
-    x = '0          125000   175000   300000'
-    y = '2.5  6  10  14'
-    scale_factor = 1
-  []
-  [dt_limit_func]
-    type = ParsedFunction
-    expression = 'if(t <20000,5000,
-                    if(t <95000,
-                      if(abs(d_increment) < 1e-3,5000, 
-                        if(abs(d_increment) < 5e-3,2500, 
-                          if(abs(d_increment) < 1e-2,2000, 
-                            if(abs(d_increment) < 5e-2,1000, 
-                              if(abs(d_increment) < 1e-1,500,100))))),
-                      if(abs(d_increment) < 1e-3,2000, 
-                        if(abs(d_increment) < 5e-3,1000, 
-                          if(abs(d_increment) < 1e-2,500, 
-                            if(abs(d_increment) < 5e-2,250, 
-                              if(abs(d_increment) < 1e-1,100,50)))))))'
-    symbol_names = 'd_increment'
-    symbol_values = 'd_increment'
-  []
-
-[]
-[Postprocessors]
-  [d_average]
-    type = ElementAverageValue
-    variable = d
-    execute_on = 'initial timestep_end'
-    block = pellet
-  []
-  [d_increment]
-    type = ChangeOverTimePostprocessor
-    change_with_respect_to_initial = false
-    postprocessor = d_average
-    execute_on = 'initial timestep_end'
-  []
-  [dt_limit]
-    type = FunctionValuePostprocessor
-    function = dt_limit_func
-    execute_on = 'TIMESTEP_BEGIN'
   []
 []
 
 [Executioner]
   type = Transient # 瞬态求解器
-  solve_type = 'PJFNK' #求解器，PJFNK是预处理雅可比自由牛顿-克雷洛夫方法
+  solve_type = 'NEWTON' #求解器，PJFNK是预处理雅可比自由牛顿-克雷洛夫方法
   petsc_options_iname = '-pc_type -pc_factor_mat_solver_package -ksp_type'
   petsc_options_value = 'lu superlu_dist gmres'
 
   automatic_scaling = true # 启用自动缩放功能，有助于改善病态问题的收敛性
   compute_scaling_once = true  # 每个时间步都重新计算缩放
   nl_max_its = 30
-  nl_rel_tol = 1e-5 # 非线性求解的相对容差
+  nl_rel_tol = 1e-6 # 非线性求解的相对容差
   nl_abs_tol = 1e-7 # 非线性求解的绝对容差
   l_tol = 1e-7  # 线性求解的容差
   l_abs_tol = 1e-8 # 线性求解的绝对容差
   l_max_its = 150 # 线性求解的最大迭代次数
   accept_on_max_fixed_point_iteration = true # 达到最大迭代次数时接受解
   dtmin = 50
-  dt = 10000 # 时间步长3600s
+  dt = 4000 # 时间步长3600s
   end_time = 3e5 # 总时间24h
-
   fixed_point_rel_tol =1e-4 # 固定点迭代的相对容差
-  [TimeStepper]
-    type = FunctionDT
-    function = dt_limit_func
-  []
 []
-
-
-
-
-h=${fparse 3.14*pellet_outer_radius/2/n_elems_azimuthal}
 
 [Outputs]
   exodus = true #表示输出exodus格式文件
-  file_base = 'outputs/h=${h}_l=${length_scale_paramete}_Gc=${pellet_critical_energy}'
+  file_base = 'outputs/l=${length_scale_paramete}_Gc=${Gc}'
 []

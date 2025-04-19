@@ -7,8 +7,9 @@ def sync_fracture_back():
     source_root = "/home/yp/projects/raccoon/FuelFracture"
     target_root = "/home/yp/projects/fuel_rods/FuelFracture"
     
-    exclude_ext = {'.e', '.xx'}  # 需要排除的扩展名
-    exclude_dirs = {'parameter_studies', 'Outputs','.jitcache'}  # 需要排除的文件夹
+    exclude_ext = {'.e', '.xx','.log','.json'}  # 需要排除的扩展名
+    exclude_dirs = {'parameter_studies', 'Outputs','.jitcache','T_images'}  # 需要排除的文件夹
+    exclude_dir_suffixes = {'_my_checkpoint_cp'}  # 需要排除的文件夹后缀
 
     # 自定义目录复制函数
     def copy_recursive(src, dst):
@@ -18,9 +19,22 @@ def sync_fracture_back():
             
             # 检查是否是需要排除的文件夹
             if os.path.isdir(src_path):
+                # 检查文件夹名称是否在排除列表中
                 if item in exclude_dirs:
                     print(f"跳过排除的文件夹: {src_path}")
                     continue
+                
+                # 检查文件夹名称是否以排除的后缀结尾
+                should_exclude = False
+                for suffix in exclude_dir_suffixes:
+                    if item.endswith(suffix):
+                        print(f"跳过以 {suffix} 结尾的文件夹: {src_path}")
+                        should_exclude = True
+                        break
+                
+                if should_exclude:
+                    continue
+                    
                 if not os.path.exists(dst_path):
                     os.makedirs(dst_path, exist_ok=True)
                 copy_recursive(src_path, dst_path)

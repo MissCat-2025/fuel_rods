@@ -447,7 +447,7 @@ normal_tol = '${fparse 3.14*pellet_inner_diameter/n_azimuthal*1e-3/10}'
       type = ADParsedMaterial
       property_name = D_fickian
       coupled_variables = 'x T d'
-      expression = '(1-0.8*d)*pow(10, -9.386 - 4260/(T) + 0.0012*T*x + 0.00075*T*log10(1+2/(x)))'
+      expression = '(1-0.001*d)*pow(10, -9.386 - 4260/(T) + 0.0012*T*x + 0.00075*T*log10(1+2/(x)))'
       block = pellet
     []
     [D_soret]
@@ -528,7 +528,7 @@ power_factor = '${fparse 1000*1/3.1415926/(pellet_outer_radius^2-pellet_inner_ra
   # []
   [gap_conductance]
     type = PiecewiseLinear
-    x = '0 1000000'
+    x = '0 1100000'
     y = '3500 2000'
     scale_factor = 1         # 保持原有的转换因子
   []

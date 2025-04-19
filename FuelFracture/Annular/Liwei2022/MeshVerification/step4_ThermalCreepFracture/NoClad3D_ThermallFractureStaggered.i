@@ -1,32 +1,28 @@
-# mpirun -n 16 ../../../../../../raccoon-opt -i NoClad3D_ThermallFractureStaggered.i
-# mpirun -n 16 /home/yp/projects/raccoon/raccoon-opt -i NoClad3D_ThermallFractureStaggered.i  --mesh-only KAERI_HANARO_UpperRod1.e
+# mpirun -n 13 /home/yp/projects/raccoon/raccoon-opt -i NoClad3D_ThermallFractureStaggered.i  --mesh-only KAERI_HANARO_UpperRod1.e
 pellet_density=10431.0#10431.0*0.85#kg⋅m-3
-pellet_elastic_constants=2.2e11#Pa
 pellet_nu = 0.345
 pellet_thermal_expansion_coef=1e-5#K-1
-pellet_K = '${fparse pellet_elastic_constants/3/(1-2*pellet_nu)}'
-pellet_G = '${fparse pellet_elastic_constants/2/(1+pellet_nu)}'
-Gf = 3 #断裂能
+Gc = 3 #断裂能
+# dt = 50000
 pellet_critical_fracture_strength=6.0e7#Pa
-length_scale_paramete=6e-5
-pellet_critical_energy=${fparse Gf} #J⋅m-2
-
+fission_rate=2.8e19
+pellet_critical_energy=${fparse Gc} #J⋅m-2
 #《《下面数据取自[1]Thermomechanical Analysis and Irradiation Test of Sintered Dual-Cooled Annular pellet》》
 
 # 双冷却环形燃料几何参数 (单位：mm)(无内外包壳)
 pellet_inner_diameter = 10.291         # 芯块内直径mm
 pellet_outer_diameter = 14.627         # 芯块外直径mm
 length = 6e-5                    # 轴向长度(m)
-# 网格控制参数n_azimuthal = 512时网格尺寸为6.8e-5m
-n_radial_pellet = 32          # 燃料径向单元数
-n_azimuthal = 512           # 周向基础单元数
-growth_factor = 1.0        # 径向增长因子
+
+mesh_size = 4e-5 #网格尺寸即可
+x2 = 1.5
+length_scale_paramete=${fparse mesh_size*x2}
+n_azimuthal = '${fparse int(3.1415*(pellet_outer_diameter)/mesh_size*1e-3/4)*4}' #int()取整
+n_radial_pellet = '${fparse int((pellet_outer_diameter-pellet_inner_diameter)/mesh_size*1e-3/2)}'
 n_axial = 1                # 轴向单元数
 # 计算半径参数 (转换为米)
 pellet_inner_radius = '${fparse pellet_inner_diameter/2*1e-3}'
 pellet_outer_radius = '${fparse pellet_outer_diameter/2*1e-3}'
-#自适应法线公差
-normal_tol = '${fparse 3.14*pellet_inner_diameter/n_azimuthal*1e-3/10}'
 [Mesh]
   [pellet1]
     type = AnnularMeshGenerator
@@ -34,7 +30,7 @@ normal_tol = '${fparse 3.14*pellet_inner_diameter/n_azimuthal*1e-3/10}'
     nt = ${n_azimuthal}
     rmin = ${pellet_inner_radius}
     rmax = ${pellet_outer_radius}
-    growth_r = ${growth_factor}
+    growth_r = 1.0
     boundary_id_offset = 10
     boundary_name_prefix = 'pellet'
   []
@@ -49,39 +45,41 @@ normal_tol = '${fparse 3.14*pellet_inner_diameter/n_azimuthal*1e-3/10}'
     old_boundary = 'pellet_rmin pellet_rmax'
     new_boundary = 'pellet_inner pellet_outer'
   []
-  [extrude]
-    type = MeshExtruderGenerator
+  [cut_x]
+    type = PlaneDeletionGenerator
     input = rename1
-    extrusion_vector = '0 0 ${length}'
+    point = '0 0 0'
+    normal = '-1 0 0'  # 切割x>0区域
+    new_boundary = 'y_axis'
+  []
+  [cut_y]
+    type = PlaneDeletionGenerator
+    input = cut_x
+    point = '0 0 0'
+    normal = '0 -1 0'  # 切割y>0区域
+    new_boundary = 'x_axis'
+  []
+  [extrude]
+    type = AdvancedExtruderGenerator
+    input = cut_y                   # 修改输入为切割后的网格
+    heights = '${length}'
     num_layers = '${n_axial}'
-    bottom_sideset = 'bottom'
-    top_sideset = 'top'
+    direction = '0 0 1'
+    bottom_boundary = '100'
+    top_boundary = '101'
+    subdomain_swaps = '1 1'
+  []
+  [rename_extrude]
+    type = RenameBoundaryGenerator
+    input = extrude
+    old_boundary = '100 101'
+    new_boundary = 'bottom top' # 最终边界命名
   []
   [rename2]
     type = RenameBlockGenerator
-    input = extrude
+    input = rename_extrude
     old_block = '1'
     new_block = 'pellet'
-  []
-  # 创建x轴切割边界面 (y=0线)
-  [x_axis_cut]
-    type = SideSetsBetweenSubdomainsGenerator
-    input = rename2
-    new_boundary = 'x_axis'
-    primary_block = 'pellet'
-    paired_block = 'pellet'
-    normal = '0 1 0'  # 法线方向为Y轴
-    normal_tol = '${normal_tol}'
-  []
-  # 创建x轴切割边界面 (y=0线)
-  [y_axis_cut]
-    type = SideSetsBetweenSubdomainsGenerator
-    input = x_axis_cut
-    new_boundary = 'y_axis'
-    primary_block = 'pellet'
-    paired_block = 'pellet'
-    normal = '1 0 0'  # 法线方向为X轴
-    normal_tol = '${normal_tol}'
   []
 []
 
@@ -89,7 +87,7 @@ normal_tol = '${fparse 3.14*pellet_inner_diameter/n_azimuthal*1e-3/10}'
   [fracture]
     type = TransientMultiApp
     input_files = 'NoClad3D_ThermallFractureStaggered_SubApp.i'
-    cli_args = 'Gc=${pellet_critical_energy};l=${length_scale_paramete};E0=${pellet_elastic_constants}'
+    cli_args = 'Gc=${pellet_critical_energy};l=${length_scale_paramete}'
     execute_on = 'TIMESTEP_END'
     # 强制同步参数
     sub_cycling = false          # 禁止子循环
@@ -116,6 +114,12 @@ normal_tol = '${fparse 3.14*pellet_inner_diameter/n_azimuthal*1e-3/10}'
     to_multi_app = 'fracture'
     variable = sigma0_field
     source_variable = sigma0_field
+  []
+  [to_a1]
+    type = MultiAppGeneralFieldShapeEvaluationTransfer
+    to_multi_app = 'fracture'
+    variable = a1
+    source_variable = a1
   []
 []
 
@@ -282,21 +286,21 @@ normal_tol = '${fparse 3.14*pellet_inner_diameter/n_azimuthal*1e-3/10}'
     value = 0
   []
 
-  #芯块包壳间隙压力
-  [gap_pressure_fuel_x]
-    type = Pressure
-    variable = disp_x
-    boundary = 'pellet_inner pellet_outer'
-    factor = 2.0e6
-    use_displaced_mesh = true
-  []
-  [gap_pressure_fuel_y]
-    type = Pressure
-    variable = disp_y
-    boundary = 'pellet_inner pellet_outer'
-    factor = 2.0e6
-    use_displaced_mesh = true
-  []
+  # #芯块包壳间隙压力
+  # [gap_pressure_fuel_x]
+  #   type = Pressure
+  #   variable = disp_x
+  #   boundary = 'pellet_inner pellet_outer'
+  #   factor = 2.0e6
+  #   use_displaced_mesh = false
+  # []
+  # [gap_pressure_fuel_y]
+  #   type = Pressure
+  #   variable = disp_y
+  #   boundary = 'pellet_inner pellet_outer'
+  #   factor = 2.0e6
+  #   use_displaced_mesh = false
+  # []
   [coolant_bc]#对流边界条件
     type = ConvectiveFluxFunction
     variable = T
@@ -315,23 +319,24 @@ normal_tol = '${fparse 3.14*pellet_inner_diameter/n_azimuthal*1e-3/10}'
     #定义芯块热导率、密度、比热等材料属性
     [pellet_properties2]
       type = ADGenericConstantMaterial
-      prop_names = 'K G l Gc E0 density'
-      prop_values = '${pellet_K} ${pellet_G} ${length_scale_paramete} ${pellet_critical_energy} ${pellet_elastic_constants} ${pellet_density}'
+      prop_names = 'l Gc density nu'
+      prop_values = '${length_scale_paramete} ${pellet_critical_energy} ${pellet_density} ${pellet_nu}'
       block = pellet
     []
     # 为临界断裂强度生成威布尔分布
     [sigma0_mat]
       type = ADParsedMaterial
       property_name = sigma0
-      coupled_variables = 'sigma0_field'
-      expression = 'sigma0_field'  # 直接使用辅助变量的值
+      coupled_variables = 'sigma0_field d'
+      expression = 'sigma0_field*(1-0.1*d)'  # 直接使用辅助变量的值
       block = pellet
     []
+
     [pellet_thermal_conductivity] #新加的！！！！！！！！！！！！！！！！！！！！！！
       type = ADParsedMaterial
       property_name = thermal_conductivity #参考某论文来的，不是Fink-Lukuta model（非常复杂）
-      coupled_variables = 'T d'
-      expression = '(100/(7.5408 + 17.692*T/1000 + 3.6142*(T/1000)^2) + 6400/((T/1000)^2.5)*exp(-16.35/(T/1000)))*(1-0.1*d)'
+      coupled_variables = 'T'
+      expression = '(100/(7.5408 + 17.692*T/1000 + 3.6142*(T/1000)^2) + 6400/((T/1000)^2.5)*exp(-16.35/(T/1000)))'
       block = pellet
     []
     [pellet_specific_heat]
@@ -341,13 +346,22 @@ normal_tol = '${fparse 3.14*pellet_inner_diameter/n_azimuthal*1e-3/10}'
       expression = '(296.7 * 535.285^2 * exp(535.285/T))/(T^2 * (exp(535.285/T) - 1)^2) + 2.43e-2 * T + (x+2) * 8.745e7 * 1.577e5 * exp(-1.577e5/(8.314*T))/(2 * 8.314 * T^2)'
       block = pellet
     []
+    [pellet_elastic_constants]
+      type = ADParsedMaterial
+      property_name = E #Fink model
+      coupled_variables = 'T d'  # 需要在AuxVariables中定义Y变量
+      expression = '201.3e9*(1.0-1.0915e-4*T)*(1-0.1*d)'
+      block = pellet
+    []
+
+
     [total_power]
       type = ADDerivativeParsedMaterial
       property_name = total_power
       coupled_variables = 'd'  # 声明依赖的变量
       functor_names = 'power_history'  # 声明使用的函数
       functor_symbols = 'P'  # 为函数指定符号名称
-      expression = 'P * (1-0.01*d)'  # 直接使用函数符号进行计算
+      expression = 'P * (1-0.05*d)'  # 直接使用函数符号进行计算
       derivative_order = 1  # 需要计算导数时指定
       block = pellet
       output_properties = 'total_power'
@@ -362,13 +376,65 @@ normal_tol = '${fparse 3.14*pellet_inner_diameter/n_azimuthal*1e-3/10}'
       temperature = T
       block = pellet
     []
+    #定义燃耗（可以是常数或变量）
+    [burnup]
+      type = ADBurnupMaterial
+      total_power = total_power
+      initial_density = ${pellet_density}
+      block = pellet
+      output_properties = 'burnup'
+      outputs = exodus
+    []
+    # 肿胀应变函数
+    [swelling_coef]
+      type = ADDerivativeParsedMaterial  # 改为ADParsedMaterial
+      property_name = swelling_coef
+      coupled_variables = 'T'
+      material_property_names = 'burnup'
+      expression = '(${pellet_density}*5.577e-5*burnup + 1.101e-29*pow(2800-T,11.73)*exp(-0.0162*(2800-T))*(1-exp(-0.0178*${pellet_density}*burnup)))/3'
+      block = pellet
+    []
+    [CD_factor]
+      type = ADParsedMaterial
+      property_name = CD_factor
+      coupled_variables = 'T'
+      expression = 'if(T < 1023.15, 7.2-0.0086*(T-298.15),1)'
+      block = pellet
+    []
+    # 密实化温度因子函数
+    [densification_coef]
+      type = ADDerivativeParsedMaterial  # 改为ADParsedMaterial
+      property_name = densification_coef
+      coupled_variables = 'T'
+      material_property_names = 'CD_factor burnup'
+      expression = '0.005 * (exp(-4.605 * burnup / (CD_factor * 0.006024)) - 1)/3'# 0.6024是5000MWd/tU的转换系数
+      block = pellet
+    []
+        # 肿胀应变计算
+    [swelling_eigenstrain]
+      type = ADComputeVariableFunctionEigenstrain
+      eigen_base = '1 1 1 0 0 0'
+      prefactor = swelling_coef
+      eigenstrain_name = swelling_eigenstrain
+      block = pellet
+    [../]
+
+    # 密实化应变计算
+    [densification_eigenstrain]
+      type = ADComputeVariableFunctionEigenstrain
+      eigen_base = '1 1 1 0 0 0'
+      prefactor = densification_coef
+      eigenstrain_name = densification_eigenstrain
+      block = pellet
+    [../]
+
 
     #化学相关
     [D_fickian]
       type = ADParsedMaterial
       property_name = D_fickian
       coupled_variables = 'x T d'
-      expression = '(1-0.8*d)*pow(10, -9.386 - 4260/(T) + 0.0012*T*x + 0.00075*T*log10(1+2/(x)))'
+      expression = '(1-0.99*d)*pow(10, -9.386 - 4260/(T) + 0.0012*T*x + 0.00075*T*log10(1+2/(x)))'
       block = pellet
     []
     [D_soret]
@@ -384,7 +450,7 @@ normal_tol = '${fparse 3.14*pellet_inner_diameter/n_azimuthal*1e-3/10}'
     type = UO2CreepRate
     temperature = T
     oxygen_ratio = x
-    fission_rate = 1.2e19
+    fission_rate = ${fparse fission_rate}
     theoretical_density = 95.0
     grain_size = 10.0
     vonMisesStress = vonMises
@@ -399,34 +465,43 @@ normal_tol = '${fparse 3.14*pellet_inner_diameter/n_azimuthal*1e-3/10}'
 
     [pellet_strain]
         type = ADComputeSmallStrain 
-        eigenstrain_names = 'thermal_eigenstrain creep_eigenstrain'
+        eigenstrain_names = 'thermal_eigenstrain creep_eigenstrain swelling_eigenstrain densification_eigenstrain'
         block = pellet
     []
-
+    [a1]
+      type = ADDerivativeParsedMaterial
+      property_name = a1
+      material_property_names = 'Gc E l sigma0'
+      expression = '4*E*Gc/sigma0/sigma0/3.14159/l'
+      output_properties = 'a1'
+      outputs = exodus
+      block = pellet
+    []
     [degradation]
       type = RationalDegradationFunction
       property_name = g
-      expression = (1-d)^p/((1-d)^p+(1.5*E0*Gc/sigma0^2)/l*d*(1+a2*d))*(1-eta)+eta
+      expression = (1-d)^p/((1-d)^p+a1*d*(1+a2*d))*(1-eta)+eta
       phase_field = d
-      material_property_names = 'Gc sigma0 l E0'
+      material_property_names = 'a1'
       parameter_names = 'p a2 eta'
-      parameter_values = '2 2 1e-6'
+      parameter_values = '2 -0.5 1e-6'
       block = pellet
     []
     [crack_geometric]
       type = CrackGeometricFunction
       property_name = alpha
-      expression = 'd'
+      expression = '2*d-d*d'
       phase_field = d
       block = pellet
     []
     [pellet_elasticity]
-      type = SmallDeformationIsotropicElasticity
-      bulk_modulus = K
-      shear_modulus = G
+      type = SmallDeformationHBasedElasticity
+      youngs_modulus = E
+      poissons_ratio = nu
+      tensile_strength = sigma0
+      fracture_energy = Gc
       phase_field = d
       degradation_function = g
-      decomposition = SPECTRAL
       output_properties = 'psie_active'
       outputs = exodus
       block = pellet
@@ -440,65 +515,26 @@ normal_tol = '${fparse 3.14*pellet_inner_diameter/n_azimuthal*1e-3/10}'
 # 线密度转为体积密度的转换系数
 power_factor = '${fparse 1000*1/3.1415926/(pellet_outer_radius^2-pellet_inner_radius^2)}' #新加的！！！！！！！！！！！！！！！！！！！！！！
 [Functions]
-  [power_history] #新加的！！！！！！！！！！！！！！！！！！！！！！
-    type = PiecewiseLinear #论文的功率历史
-    x = '0          864000   6912000   8208000'
-    y = '0.0          105     75     0'
-    scale_factor = ${power_factor}         # 保持原有的转换因子
-    # 论文中只给了线密度，需要化为体积密度
-  []
   [gap_conductance]
     type = PiecewiseLinear
-    x = '0 8208000'
+    x = '0 1100000'
     y = '3500 2000'
     scale_factor = 1         # 保持原有的转换因子
   []
-  # [power_history] #新加的！！！！！！！！！！！！！！！！！！！！！！
-  # type = PiecewiseLinear #论文的功率历史
-  # x = '0 800000 950000 1000000   '
-  # y = '0 105 100 0'
-  # scale_factor = ${power_factor}         # 保持原有的转换因子
-  # # 论文中只给了线密度，需要化为体积密度
-  # []
+  [power_history] #新加的！！！！！！！！！！！！！！！！！！！！！！
+  type = PiecewiseLinear #论文的功率历史
+  x = '0 800000 950000 1000000   '
+  y = '0 105 100 0'
+  scale_factor = ${power_factor}         # 保持原有的转换因子
+  # 论文中只给了线密度，需要化为体积密度
+  []
   [dt_limit_func]
     type = ParsedFunction
-    expression = 'if(t < 300000, 50000,
-                   if(t < 6912000,
-                      if(abs(d_increment) < 1e-3, 25000,
-                         if(abs(d_increment) < 5e-3, 20000,
-                            if(abs(d_increment) < 1e-2, 10000,
-                               if(abs(d_increment) < 5e-2, 5000,
-                                  if(abs(d_increment) < 1e-1, 2500, 1000)))))
-                      ,
-                      if(abs(d_increment) < 1e-3, 20000,
-                         if(abs(d_increment) < 5e-3, 10000,
-                            if(abs(d_increment) < 1e-2, 5000,
-                               if(abs(d_increment) < 5e-2, 2500,
-                                  if(abs(d_increment) < 1e-1, 1000, 500)))))
-                   ))'
-    symbol_names = 'd_increment'
-    symbol_values = 'd_increment'
+    expression = 'if(t < 250000, 50000,
+                   if(t < 950000, 25000, 5000))'
   []
 []
-[Postprocessors]
-  [d_average]
-    type = ElementAverageValue
-    variable = d
-    execute_on = 'initial timestep_end'
-    block = pellet
-  []
-  [d_increment]
-    type = ChangeOverTimePostprocessor
-    change_with_respect_to_initial = false
-    postprocessor = d_average
-    execute_on = 'initial timestep_end'
-  []
-  [dt_limit]
-    type = FunctionValuePostprocessor
-    function = dt_limit_func
-    execute_on = 'TIMESTEP_BEGIN'
-  []
-[]
+
 
 [Executioner]
     type = Transient
@@ -514,9 +550,9 @@ power_factor = '${fparse 1000*1/3.1415926/(pellet_outer_radius^2-pellet_inner_ra
     l_tol = 1e-7  # 线性求解的容差
     l_abs_tol = 1e-8 # 线性求解的绝对容差
     l_max_its = 150 # 线性求解的最大迭代次数
-    dtmin = 1
-    end_time = 9000000
-
+    dtmin = 500
+    # dt = ${dt}
+    end_time = 1100000
     [TimeStepper]
       type = FunctionDT
       function = dt_limit_func
@@ -524,4 +560,5 @@ power_factor = '${fparse 1000*1/3.1415926/(pellet_outer_radius^2-pellet_inner_ra
 []
 [Outputs]
   exodus = true
+  print_linear_residuals = false
 []

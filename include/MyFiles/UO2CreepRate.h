@@ -12,6 +12,8 @@ public:
 
 protected:
   virtual void computeQpProperties() override;
+  virtual void initQpStatefulProperties() override;
+  
   // 输入变量
   const ADVariableValue & _temperature;
   const ADVariableValue & _oxygen_ratio;
@@ -34,4 +36,14 @@ protected:
   
   // 蠕变率
   ADMaterialProperty<RankTwoTensor> & _creep_rate;
+  
+  // 瞬态蠕变相关属性
+  const bool _consider_transient_creep; // 是否考虑瞬态蠕变
+  MaterialProperty<Real> & _max_stress_time; // 最大应力应用时间
+  const MaterialProperty<Real> & _max_stress_time_old;
+  MaterialProperty<Real> & _max_stress; // 历史最大应力
+  const MaterialProperty<Real> & _max_stress_old;
+
+  const bool _USE_MATPRO_Halden_model; // 是否考虑瞬态蠕变
+  const bool _USE_transition_stress; // 是否考虑瞬态蠕变
 };

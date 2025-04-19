@@ -463,5 +463,6 @@ h=${fparse 3.14*pellet_outer_radius/2/n_elems_azimuthal}
 
 [Outputs]
   exodus = true #表示输出exodus格式文件
-  file_base = 'outputs/PF_d_creep/h=${h}_l=${length_scale_paramete}_Gc=${pellet_critical_energy}'
+  print_linear_residuals = false
+  file_base = 'outputs/h=${h}_l=${length_scale_paramete}_Gc=${pellet_critical_energy}'
 []
