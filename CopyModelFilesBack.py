@@ -30,11 +30,11 @@ def sync_to_fuelrods():
                 shutil.copy2(src_path, dst_path)
                 if src_path.endswith(('.h', '.C')):
                     with open(dst_path, 'r+', encoding='utf-8') as f:
-                        content = f.read().replace('raccoonApp', 'FuelRodsApp')
-                        f.seek(0)
-                        f.write(content)
-                        f.truncate()
-    
+                content = f.read().replace('raccoonApp', 'FuelRodsApp')
+                f.seek(0)
+                f.write(content)
+                f.truncate()
+
     # 复制include目录
     source_include = f"{source_base}/include/MyFiles"
     copy_with_content_replace(source_include, target_include)
