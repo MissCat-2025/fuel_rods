@@ -81,11 +81,15 @@ d)      [安装linux子系统]
     运行如下代码即可：
 赋予step1_install_moose_env.sh运行权限：
 
+
 chmod +x step1_install_moose_env.sh
+
 
 运行step1_install_moose_env.sh脚本：
 
+
 ./step1_install_moose_env.sh
+
 
 ## 第四步：安装MOOSE本体
 
@@ -97,11 +101,15 @@ chmod +x step1_install_moose_env.sh
 
 赋予step2_install_moose_software.sh运行权限：
 
+
 chmod +x step2_install_moose_software.sh
+
 
 运行step1_install_moose_env.sh脚本：
 
+
 ./step2_install_moose_software.sh
+
 
 耐心等一段时间，看到
 
