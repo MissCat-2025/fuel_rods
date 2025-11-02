@@ -6,9 +6,8 @@
 
 ## 第一步：安装WSL
 
-（用终端脚本下载太慢了，这里没有做脚本）
-
-一开始没有安装window的子系统linux（WSL）前，先不需要将全部代码clone下来，只需要看着下面教程一步步来即可
+（用终端脚本下载步骤b)的文件太慢了，这里没有做脚本）
+一开始没有安装window的子系统linux（WSL）前，先不需要将全部代码clone下来，只需要看着下面教程一步步来即可，**前往别想着跳步！前往别想着跳步！前往别想着跳步！**
 
 *（[windows11 安装WSL2全流程_wsl2安装-CSDN博客](https://blog.csdn.net/u011119817/article/details/130745551)，或其他安装WSL2的教程，有一定概率报错，这与每个人的电脑设置有关，试过许多电脑，还没有报错），按照这个来，安装好linux子系统就OK，可以不用安装图形界面。具体*步骤如下
 
@@ -24,16 +23,16 @@ a)       [启用window子系统及虚拟化](https://blog.csdn.net/u011119817/ar
 
     开启完这两个后，电脑需要重启
 
-b)      [下载发行版本](https://aka.ms/wslubuntu2004)
+b)      [下载发行版本]不能跳过！！！(https://aka.ms/wslubuntu2004)
 
-c)
+c)      [更新WSL2前置]
     windows终端power shell输入：
 
     《**wsl --update**》
 
     《**wsl --set-default-version 2**》
 
-d)
+d)      [安装linux子系统]
     双击安装b)中下好的子系统，设置linux系统名字与密码，然后就安好linux子系统。
 
     注意：输入密码时并不会显示你输入了什么，密码注意别太麻烦，设置一个字符都可以
@@ -68,7 +67,7 @@ d)
 
 ![1742203568705](image/README/1742203568705.png)
 
-    确定和我在同一个路径后，将fuel_rods\一些脚本\MOOSE安装相关的脚本\的几个脚本（这个脚本目前应该在Windows文件夹下）放到子系统的/home/yp文件夹下，
+    确定和我在同一个路径后，将fuel_rods/tutorial/scripts下的几个脚本（这个脚本目前应该在Windows文件夹下）放到子系统的/home/yp文件夹下（yp是我的linux系统名字,你的可能不是），
     具体操作分3步，找到子系统的/home/yp文件夹（下图就是打开的方法），然后找到脚本将其黏贴至/home/yp文件夹即可
 
 ![1742206163642](image/README/1742206163642.png)![1742206494662](image/README/1742206494662.png)
@@ -79,11 +78,12 @@ d)
 
 ![1742206569067](image/README/1742206569067.png)
 
-    运行如下代码即可
+    运行如下代码即可：
+赋予step1_install_moose_env.sh运行权限：
 
 chmod +x step1_install_moose_env.sh
 
-chmod +x step2_install_moose_software.sh
+运行step1_install_moose_env.sh脚本：
 
 ./step1_install_moose_env.sh
 
@@ -93,9 +93,13 @@ chmod +x step2_install_moose_software.sh
 
 ![1742206569067](image/README/1742206569067.png)
 
-运行如下代码即可
+在/home/yp文件夹下运行如下代码即可
+
+赋予step2_install_moose_software.sh运行权限：
 
 chmod +x step2_install_moose_software.sh
+
+运行step1_install_moose_env.sh脚本：
 
 ./step2_install_moose_software.sh
 
@@ -103,43 +107,6 @@ chmod +x step2_install_moose_software.sh
 
 ![1742208907135](image/README/1742208907135.png)
 
-的类似的结果就可以放心了，这下moose就完全安装好了
-
-
-# 第二章，更新
-
-应始终对Conda和MOOSE存储库进行更新。
-
-且如果更新conda环境，请始终更新配套的moose版本：
-
-## 更新conda：
-
-《conda activate moose》
-
-《conda update –all》
-
-## 更新MOOSE存储库
-
-请使用以下命令：
-
-《cd ~/projects/moose》
-
-《git fetch origin》
-
-《git rebase origin/master》
-
-
-## git更新
-
-运行git clone https://github.com/xxx.git的时候一直下不下来，可以用：
-
-《sudo apt-get update》
-
-《sudo apt-get install --reinstall ca-certificates》
-
-《sudo apt-get upgrade git》
-
-可以试用这几条解决
-
+的类似的结果就可以放心了，这下moose就完全安装好了，没安好就把moose整个文件夹删掉，然后重复该脚本
 
 # 接下来的MOOSE具体教程请看fuel_rods/MOOSE零基础总教程/MOOSE基础知识-整体xxx.docx
