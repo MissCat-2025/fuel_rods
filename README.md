@@ -82,13 +82,13 @@ d)      [安装linux子系统]
 赋予step1_install_moose_env.sh运行权限：
 
 
-chmod +x step1_install_moose_env.sh
+    chmod +x step1_install_moose_env.sh
 
 
 运行step1_install_moose_env.sh脚本：
 
 
-./step1_install_moose_env.sh
+    ./step1_install_moose_env.sh
 
 
 ## 第四步：安装MOOSE本体
@@ -102,13 +102,13 @@ chmod +x step1_install_moose_env.sh
 赋予step2_install_moose_software.sh运行权限：
 
 
-chmod +x step2_install_moose_software.sh
+    chmod +x step2_install_moose_software.sh
 
 
-运行step1_install_moose_env.sh脚本：
+运行step2_install_moose_software.sh脚本：
 
 
-./step2_install_moose_software.sh
+    ./step2_install_moose_software.sh
 
 
 耐心等一段时间，看到
@@ -117,4 +117,4 @@ chmod +x step2_install_moose_software.sh
 
 的类似的结果就可以放心了，这下moose就完全安装好了，没安好就把moose整个文件夹删掉，然后重复该脚本
 
-# 接下来的MOOSE具体教程请看fuel_rods/MOOSE零基础总教程/MOOSE基础知识-整体xxx.docx
+# 接下来的MOOSE具体教程请看fuel_rods/tutorial/MooseTutorial1.0.docx
