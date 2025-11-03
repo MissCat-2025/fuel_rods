@@ -7,13 +7,13 @@
 ## 第一步：安装WSL
 
 （用终端脚本下载步骤b)的文件太慢了，这里没有做脚本）
-一开始没有安装window的子系统linux（WSL）前，先不需要将全部代码clone下来，只需要看着下面教程一步步来即可，**前往别想着跳步！前往别想着跳步！前往别想着跳步！**
+一开始没有安装window的子系统linux（WSL）前，先不需要将fuel_rods的全部代码clone下来，只需要看着下面教程一步步来即可，**前往别想着跳步！前往别想着跳步！前往别想着跳步！**
 
 *（[windows11 安装WSL2全流程_wsl2安装-CSDN博客](https://blog.csdn.net/u011119817/article/details/130745551)，或其他安装WSL2的教程，有一定概率报错，这与每个人的电脑设置有关，试过许多电脑，还没有报错），按照这个来，安装好linux子系统就OK，可以不用安装图形界面。具体*步骤如下
 
 a)       [启用window子系统及虚拟化](https://blog.csdn.net/u011119817/article/details/130745551#1window_14)
 
-    windows终端power shell输入：
+    windows终端power shell输入（快捷键：win+X，再按A，即可打开终端power shell）：
 
     **《Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Windows-Subsystem-Linux》**
 
@@ -23,7 +23,7 @@ a)       [启用window子系统及虚拟化](https://blog.csdn.net/u011119817/ar
 
     开启完这两个后，电脑需要重启
 
-b)      [下载发行版本]不能跳过！！！(https://aka.ms/wslubuntu2004)
+b)      [下载发行版本](https://aka.ms/wslubuntu2004)不能跳过这一步！！！
 
 c)      [更新WSL2前置]
     windows终端power shell输入：
@@ -60,14 +60,24 @@ d)      [安装linux子系统]
 到此，linux系统与相关配套的cursor安装好了！！！
 
 ## 第三步：安装MOOSE环境
+下载fuel_rods/tutorial/scripts下的两个一键安装moose环境与moose本体的脚本：
+一键安装moose环境脚本下载step1_install_moose_env.sh：
+    https://github.com/MissCat-2025/fuel_rods/blob/main/tutorial/scripts/step1_install_moose_env.sh
+一键安装moose本体脚本下载step2_install_moose_software.sh：
+    https://github.com/MissCat-2025/fuel_rods/blob/main/tutorial/scripts/step2_install_moose_software.sh
+![1742208985562](image/README/1742208985562.png)
 
-接下来安装相应的conda环境，在左端右键任意一个文件，选择在集成终端打开，出现3号红色矩形的内容，这个
+在左端右键任意一个文件，选择在集成终端打开，出现3号红色矩形的内容，这个
 
 **《在集成终端打开》功能是非常非常非常好用的功能，请务必记住**
 
 ![1742203568705](image/README/1742203568705.png)
 
-    确定和我在同一个路径后，将fuel_rods/tutorial/scripts下的几个脚本（这个脚本目前应该在Windows文件夹下）放到子系统的/home/yp文件夹下（yp是我的linux系统名字,你的可能不是），
+
+    
+    
+    
+    将fuel_rods/tutorial/scripts下的几个脚本（这个脚本目前应该在Windows文件夹下）放到子系统的/home/yp文件夹下（yp是我的linux系统名字,你的可能不是），
     具体操作分3步，找到子系统的/home/yp文件夹（下图就是打开的方法），然后找到脚本将其黏贴至/home/yp文件夹即可
 
 ![1742206163642](image/README/1742206163642.png)![1742206494662](image/README/1742206494662.png)
