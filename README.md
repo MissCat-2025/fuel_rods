@@ -61,9 +61,11 @@ d)      [安装linux子系统]
 
 ## 第三步：安装MOOSE环境
 下载fuel_rods/tutorial/scripts下的两个一键安装moose环境与moose本体的脚本：
-一键安装moose环境脚本下载step1_install_moose_env.sh：
+
+一键安装moose环境脚本下载（step1_install_moose_env.sh）：
     https://github.com/MissCat-2025/fuel_rods/blob/main/tutorial/scripts/step1_install_moose_env.sh
-一键安装moose本体脚本下载step2_install_moose_software.sh：
+
+一键安装moose本体脚本下载（step2_install_moose_software.sh）：
     https://github.com/MissCat-2025/fuel_rods/blob/main/tutorial/scripts/step2_install_moose_software.sh
 ![1742208985562](image/README/1742208985562.png)
 
