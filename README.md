@@ -63,34 +63,31 @@ d)      [安装linux子系统]
 下载fuel_rods/tutorial/scripts下的两个一键安装moose环境与moose本体的脚本：
 
 一键安装moose环境脚本下载（step1_install_moose_env.sh）：
+    
     https://github.com/MissCat-2025/fuel_rods/blob/main/tutorial/scripts/step1_install_moose_env.sh
 
 一键安装moose本体脚本下载（step2_install_moose_software.sh）：
+    
     https://github.com/MissCat-2025/fuel_rods/blob/main/tutorial/scripts/step2_install_moose_software.sh
 ![1742208985562](image/README/1742208985562.png)
 
-在左端右键任意一个文件，选择在集成终端打开，出现3号红色矩形的内容，这个
+回到Cursor在左端右键任意一个文件，选择在集成终端打开，出现3号红色矩形的内容，这个
 
 **《在集成终端打开》功能是非常非常非常好用的功能，请务必记住**
 
 ![1742203568705](image/README/1742203568705.png)
 
-
-    
-    
-    
-    将fuel_rods/tutorial/scripts下的几个脚本（这个脚本目前应该在Windows文件夹下）放到子系统的/home/yp文件夹下（yp是我的linux系统名字,你的可能不是），
-    具体操作分3步，找到子系统的/home/yp文件夹（下图就是打开的方法），然后找到脚本将其黏贴至/home/yp文件夹即可
+将刚才下载好的两个脚本放到子系统的/home/yp文件夹下（yp是我的linux系统名字,你的可能不是），
 
 ![1742206163642](image/README/1742206163642.png)![1742206494662](image/README/1742206494662.png)
 
-    脚本到位后，就变得简单起来
+确定把两个脚本放到指定位置后，后面的一切就变得简单起来
 
-    在cursor显示的终端：
+    回到Cursor在左端右键脚本文件，选择在集成终端打开，在cursor显示的终端按理说如下图：
 
 ![1742206569067](image/README/1742206569067.png)
 
-    运行如下代码即可：
+后运行如下代码即可：
 赋予step1_install_moose_env.sh运行权限：
 
 
@@ -102,14 +99,24 @@ d)      [安装linux子系统]
 
     ./step1_install_moose_env.sh
 
+出现下图所示的结果就安装好了moose环境
+![1742208985563](image/README/1742208985563.png)
+
+
+如果环境安装失败,那么极大概率是没有将脚本1中涉及的Miniforge3-Linux-x86_64.sh下载好，它的大小一般是91671kb
+检查\\wsl.localhost\Ubuntu\home\yp目录下是否有Miniforge3-Linux-x86_64.sh文件且大小与它是否一致，若不一致，那么就重新运行这个脚本以下载它。下载实在慢就手动下载：
+
+
+    https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh
+
 
 ## 第四步：安装MOOSE本体
 
-在cursor显示的终端：
+回到Cursor在左端右键脚本文件，选择在集成终端打开，在cursor显示的终端按理说如下图：
 
 ![1742206569067](image/README/1742206569067.png)
 
-在/home/yp文件夹下运行如下代码即可
+在该终端运行如下代码即可
 
 赋予step2_install_moose_software.sh运行权限：
 
