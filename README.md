@@ -7,9 +7,7 @@
 ## 第一步：安装WSL
 
 （用终端脚本下载步骤b)的文件太慢了，这里没有做脚本）
-一开始没有安装window的子系统linux（WSL）前，先不需要将fuel_rods的全部代码clone下来，只需要看着下面教程一步步来即可，**前往别想着跳步！前往别想着跳步！前往别想着跳步！**
-
-*（[windows11 安装WSL2全流程_wsl2安装-CSDN博客](https://blog.csdn.net/u011119817/article/details/130745551)，或其他安装WSL2的教程，有一定概率报错，这与每个人的电脑设置有关，试过许多电脑，还没有报错），按照这个来，安装好linux子系统就OK，可以不用安装图形界面。具体*步骤如下
+一开始没有安装window的子系统linux（WSL）前，先不需要将fuel_rods的全部代码clone下来，只需要看着下面教程一步步来即可，**如果是新手，请别想着跳步！千万别着跳步！千万别跳步！**
 
 a)       [启用window子系统及虚拟化](https://blog.csdn.net/u011119817/article/details/130745551#1window_14)
 
@@ -23,7 +21,7 @@ a)       [启用window子系统及虚拟化](https://blog.csdn.net/u011119817/ar
 
     开启完这两个后，电脑需要重启
 
-b)      [下载发行版本](https://aka.ms/wslubuntu2004)不能跳过这一步！！！
+b)      [下载发行版本](https://aka.ms/wslubuntu2004)**，不能跳过这一步！！！**
 
 c)      [更新WSL2前置]
     windows终端power shell输入：
@@ -33,43 +31,33 @@ c)      [更新WSL2前置]
     《**wsl --set-default-version 2**》
 
 d)      [安装linux子系统]
-    双击安装b)中下好的子系统，设置linux系统名字与密码，然后就安好linux子系统。
+    双击安装中下好的子系统，设置linux系统名字与密码，然后就安好linux子系统。
 
     注意：输入密码时并不会显示你输入了什么，密码注意别太麻烦，设置一个字符都可以
 
 ## 第二步：安装Cursor
 
-直接去官网安装最新版的Cursor，这在以后得代码编辑中中讲大放异彩
+安装Cursor等*代码集成开发环境*可以更加方便的安装与运行moose，直接去官网安装最新版的Cursor：
 
-[Cursor - The AI Code Editor](https://www.cursor.com/cn)
+[点击下载Cursor - The AI Code Editor，](https://www.cursor.com/cn)
 
 如何使用Cursor打开子系统WSL？
 
-1，打开任意一个文件夹，在左边选择中下载这么一个插件wsl
+1. 打开任意一个文件夹，在左边选择中下载这么一个插件wsl
 
 ![1742203175110](image/README/1742203175110.png)
 
-2。然后安装好后，按顺序同时按住shift+ctrl+p键呼出命令面板，输入wsl，选择连接到wsl，
+2. 然后安装好后，按顺序同时按住shift+ctrl+p键呼出命令面板，输入wsl，选择连接到wsl，等待一会
 
 ![1742203291188](image/README/1742203291188.png)
 
-3。并在左侧选择/home/xx/即可，如下图所示
+3. 并在左侧选择/home/xx/即可(xx是你的linux系统名字)，如下图所示
 
 ![1742203305450](image/README/1742203305450.png)
 
 到此，linux系统与相关配套的cursor安装好了！！！
 
 ## 第三步：安装MOOSE环境
-下载fuel_rods/tutorial/scripts下的两个一键安装moose环境与moose本体的脚本：
-
-一键安装moose环境脚本下载（step1_install_moose_env.sh）：
-    
-    https://github.com/MissCat-2025/fuel_rods/blob/main/tutorial/scripts/step1_install_moose_env.sh
-
-一键安装moose本体脚本下载（step2_install_moose_software.sh）：
-    
-    https://github.com/MissCat-2025/fuel_rods/blob/main/tutorial/scripts/step2_install_moose_software.sh
-![1742208985562](image/README/1742208985562.png)
 
 回到Cursor在左端右键任意一个文件，选择在集成终端打开，出现3号红色矩形的内容，这个
 
@@ -77,13 +65,19 @@ d)      [安装linux子系统]
 
 ![1742203568705](image/README/1742203568705.png)
 
-将刚才下载好的两个脚本放到子系统的/home/yp文件夹下（yp是我的linux系统名字,你的可能不是），
+下载一键安装moose环境与moose本体的脚本：
 
-![1742206163642](image/README/1742206163642.png)![1742206494662](image/README/1742206494662.png)
+一键安装**moose环境**脚本下载（step1_install_moose_env.sh）：
+    
+    curl -L -O https://github.com/MissCat-2025/fuel_rods/blob/main/tutorial/scripts/step1_install_moose_env.sh
 
-确定把两个脚本放到指定位置后，后面的一切就变得简单起来
+一键安装**moose本体**脚本下载（step2_install_moose_software.sh）：
+    
+    curl -L -O https://github.com/MissCat-2025/fuel_rods/blob/main/tutorial/scripts/step2_install_moose_software.sh
 
-    回到Cursor在左端右键脚本文件，选择在集成终端打开，在cursor显示的终端按理说如下图：
+把两个脚本下载好后，后面的一切就变得简单起来
+
+    回到Cursor，在左端右键脚本文件，选择在集成终端打开，在cursor显示的终端按理说如下图：
 
 ![1742206569067](image/README/1742206569067.png)
 
@@ -103,13 +97,20 @@ d)      [安装linux子系统]
 ![1742208985563](image/README/1742208985563.png)
 
 
-如果环境安装失败,那么极大概率是没有将脚本1中涉及的Miniforge3-Linux-x86_64.sh下载好，它的大小一般是91671kb
-检查\\wsl.localhost\Ubuntu\home\yp目录下是否有Miniforge3-Linux-x86_64.sh文件且大小与它是否一致，若不一致，那么就重新运行这个脚本以下载它。下载实在慢就手动下载：
+如果环境安装失败,那么**极大概率是没有将脚本1中涉及的Miniforge3-Linux-x86_64.sh下载好**，它的大小一般是91671kb
+检查\\wsl.localhost\Ubuntu\home\yp目录下是否有Miniforge3-Linux-x86_64.sh文件且大小与它是否差不多，若小太多，那么就重新运行这个脚本以下载它。
+下载实在慢就手动下载(将下面的链接复制到浏览器的地址栏)：
 
 
     https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh
 
+并将该文件放入/home/xx/，方法如下图：
 
+![1742206163642](image/README/1742206163642.png)
+
+将你下载的文件复制黏贴放到下面的位置即可(红色圈圈下面的文件就是咱们需要的Miniforge3-Linux-x86_64.sh)
+
+![1742206494662](image/README/1742206494662.png)
 ## 第四步：安装MOOSE本体
 
 回到Cursor在左端右键脚本文件，选择在集成终端打开，在cursor显示的终端按理说如下图：
@@ -130,7 +131,7 @@ d)      [安装linux子系统]
     ./step2_install_moose_software.sh
 
 
-耐心等一段时间，看到
+注意，如果编译失败，就重新运行脚本并将核数减小。耐心等一段时间，看到
 
 ![1742208907135](image/README/1742208907135.png)
 
