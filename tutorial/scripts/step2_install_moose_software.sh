@@ -178,17 +178,25 @@ else
     print_warning "未找到master或main分支，使用当前分支继续"
 fi
 
-# 获取CPU核心数
-cpu_cores=$(nproc 2>/dev/null || echo "4")
-print_info "检测到您的系统有 $cpu_cores 个CPU核心"
+# 获取CPU核心数（优先获取物理核心数）
+if command -v lscpu &> /dev/null; then
+    cpu_cores=$(lscpu -p=Core,Socket | grep -v '^#' | sort -u | wc -l)
+    core_type="物理"
+else
+    cpu_cores=$(nproc 2>/dev/null || echo "4")
+    core_type="逻辑"
+fi
+print_info "检测到您的系统有 $cpu_cores 个${core_type}CPU核心"
 
 # 智能选择CPU核心数
-if [ "$cpu_cores" -gt 8 ]; then
-    recommended_cores=$((cpu_cores - 5))
-elif [ "$cpu_cores" -gt 4 ]; then
-    recommended_cores=$((cpu_cores - 1))
+if [ "$core_type" = "物理" ]; then
+    # 如果是物理核心，保留2个核心给系统
+    recommended_cores=$((cpu_cores - 2))
+    [ "$recommended_cores" -lt 1 ] && recommended_cores=1
 else
-    recommended_cores=$cpu_cores
+    # 如果是逻辑核心，先除以2折算为大致的物理核心数，再保留2个
+    recommended_cores=$((cpu_cores / 2 - 2))
+    [ "$recommended_cores" -lt 1 ] && recommended_cores=1
 fi
 
 # 让用户选择使用的CPU核心数
