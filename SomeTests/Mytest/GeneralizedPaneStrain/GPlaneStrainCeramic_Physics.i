@@ -1,34 +1,37 @@
-# 陶瓷片热冲击实验 - 热弹性模拟部分
-# conda activate moose &&dos2unix PlaneStressCeramic.i&& mpirun -n 8 /home/yp/projects/fuel_rods/fuel_rods-opt -i PlaneStressCeramic.i
-#传统的展开写法
+# 陶瓷片热冲击实验 - 热弹性模拟（Physics 平面应变写法）
+# 用法示例：
+#   conda activate moose
+# conda activate moose &&dos2unix GPlaneStrainCeramic_Physics.i&& mpirun -n 8 /home/yp/projects/fuel_rods/fuel_rods-opt -i GPlaneStrainCeramic_Physics.i
+
 [GlobalParams]
   displacements = 'disp_x disp_y'
-  out_of_plane_strain = strain_zz
 []
 
 # 陶瓷材料参数
-E_ceramic = 370e9       # 陶瓷杨氏模量 (Pa)
-nu_ceramic = 0.3       # 陶瓷泊松比
-alpha_ceramic = 7.5e-6    # 陶瓷热膨胀系数 (1/°C)
-k_ceramic = 310          # 陶瓷导热系数 (W/m·K)
-cp_ceramic = 8800        # 比热容 (J/kg·K)
-rho_ceramic = 3980      # 密度 (kg/m³)
+E_ceramic = 370e9
+nu_ceramic = 0.3
+alpha_ceramic = 7.5e-6
+k_ceramic = 310
+cp_ceramic = 8800
+rho_ceramic = 3980
+
 [Mesh]
   [gmg]
     type = GeneratedMeshGenerator
     dim = 2
-    nx = 50            # 25mm / 0.05mm = 500
-    ny = 10            # 5mm / 0.05mm = 100
+    nx = 50
+    ny = 10
     xmax = 25e-3
     ymax = 5e-3
   []
-  [center_point]
+      [center_point]
     type = ExtraNodesetGenerator
     input = gmg
     coord = '0 0 0'
     new_boundary  = 'center_point'
   []
 []
+
 [Variables]
   [disp_x]
   []
@@ -37,7 +40,9 @@ rho_ceramic = 3980      # 密度 (kg/m³)
   [temp]
     initial_condition = 293.15
   []
-  [strain_zz]
+  [scalar_strain_zz]
+    family = SCALAR
+    order = FIRST
   []
 []
 
@@ -48,24 +53,22 @@ rho_ceramic = 3980      # 密度 (kg/m³)
   []
 []
 
+[Physics]
+  [SolidMechanics]
+    [QuasiStatic]
+      [all_mech]
+        strain = SMALL
+        planar_formulation = GENERALIZED_PLANE_STRAIN
+        scalar_out_of_plane_strain = scalar_strain_zz
+        add_variables = false
+        eigenstrain_names = 'thermal_eigenstrain'
+        use_automatic_differentiation = false
+      []
+    []
+  []
+[]
+
 [Kernels]
-  # 力学平衡
-  [solid_x]
-    type = ADStressDivergenceTensors
-    variable = disp_x
-    component = 0
-  []
-  [solid_y]
-    type = ADStressDivergenceTensors
-    variable = disp_y
-    component = 1
-  []
-  [./solid_z]
-    type = ADWeakPlaneStress
-    variable = strain_zz
-  [../]
-  
-  # 热传导
   [heat_conduction]
     type = ADHeatConduction
     variable = temp
@@ -76,70 +79,74 @@ rho_ceramic = 3980      # 密度 (kg/m³)
   []
 []
 
+[BCs]
+  # 力学边界条件
+  [symm_x]
+    type = DirichletBC
+    variable = disp_x
+    boundary = center_point
+    value = 0
+  []
+  [symm_y]
+    type = DirichletBC
+    variable = disp_y
+    boundary = center_point
+    value = 0
+  []
+
+  # 热边界条件
+  [left_temp]
+    type = ADDirichletBC
+    variable = temp
+    boundary = 'left'
+    value = 293.15
+  []
+  [right_temp]
+    type = ADDirichletBC
+    variable = temp
+    boundary = 'right'
+    value = 1293.15
+  []
+[]
+
+[Materials]
+  [thermal]
+    type = ADGenericConstantMaterial
+    prop_names = 'thermal_conductivity specific_heat density'
+    prop_values = '${k_ceramic} ${cp_ceramic} ${rho_ceramic}'
+  []
+
+  [elastic_tensor]
+    type = ComputeIsotropicElasticityTensor
+    poissons_ratio = ${nu_ceramic}
+    youngs_modulus = ${E_ceramic}
+  []
+
+  [eigenstrain]
+    type = ComputeThermalExpansionEigenstrain
+    eigenstrain_name = thermal_eigenstrain
+    stress_free_temperature = 293.15
+    thermal_expansion_coeff = ${alpha_ceramic}
+    temperature = temp
+  []
+  # [strain]
+  #   type = ADComputePlaneSmallStrain
+  #   eigenstrain_names = thermal_eigenstrain
+  # []
+  [stress]
+    type = ComputeLinearElasticStress
+  []
+[]
+
 [AuxKernels]
   [MaxPrincipalStress]
-    type = ADRankTwoScalarAux
+    type = RankTwoScalarAux
     variable = MaxPrincipal
     rank_two_tensor = stress
     scalar_type = MaxPrincipal
     execute_on = 'TIMESTEP_END'
   []
 []
-[BCs]
-  [symm_x]
-    type = ADDirichletBC
-    variable = disp_x
-    boundary = center_point
-    value = 0
-  []
-  [symm_y]
-    type = ADDirichletBC
-    variable = disp_y
-    boundary = center_point
-    value = 0
-  []
-  [left_temp]
-    type = ADDirichletBC
-    variable = temp
-    boundary = left
-    value = 293.15
-  []
-  [right_temp]
-    type = ADDirichletBC
-    variable = temp
-    boundary = right
-    value = 1293.15
-  []
-[]
-
-[Materials]
-  # 热物理属性
-  [thermal]
-    type = ADGenericConstantMaterial
-    prop_names = 'thermal_conductivity specific_heat density'
-    prop_values = '${k_ceramic} ${cp_ceramic} ${rho_ceramic}'
-  []
-  [elastic_tensor]
-    type = ADComputeIsotropicElasticityTensor
-    poissons_ratio = ${nu_ceramic}
-    youngs_modulus = ${E_ceramic}
-  []
-  [eigenstrain]
-    type = ADComputeThermalExpansionEigenstrain
-    eigenstrain_name = thermal_eigenstrain
-    stress_free_temperature = 293.15  # 应力自由温度为初始温度
-    thermal_expansion_coeff = ${alpha_ceramic}
-    temperature = temp
-  []
-  [strain]
-    type = ADComputePlaneSmallStrain
-    eigenstrain_names = thermal_eigenstrain
-  []
-  [stress]
-    type = ADComputeLinearElasticStress
-  []
-[]
-
 [Postprocessors]
   [avg_temp]
     type = ElementAverageValue
@@ -176,8 +183,8 @@ rho_ceramic = 3980      # 密度 (kg/m³)
 [Outputs]
   exodus = true
   print_linear_residuals = false
-  [csv]
+    [csv]
     type = CSV
-    file_base = 'PlaneStressCeramic_post'
+    file_base = 'PaneStrainCeramic_physics_post'
   []
 []

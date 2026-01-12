@@ -32,7 +32,7 @@ ELECTROMAGNETICS            := no
 EXTERNAL_PETSC_SOLVER       := no
 FLUID_PROPERTIES            := no
 FSI                         := no
-FUNCTIONAL_EXPANSION_TOOLS  := yes
+FUNCTIONAL_EXPANSION_TOOLS  := no
 GEOCHEMISTRY                := no
 HEAT_TRANSFER               := yes
 LEVEL_SET                   := no
@@ -47,7 +47,7 @@ REACTOR                     := no
 RDG                         := no
 RICHARDS                    := no
 SOLID_MECHANICS             := yes
-STOCHASTIC_TOOLS            := yes
+STOCHASTIC_TOOLS            := no
 THERMAL_HYDRAULICS          := no
 XFEM                        := no
 

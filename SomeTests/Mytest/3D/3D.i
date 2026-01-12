@@ -1,9 +1,8 @@
 # 陶瓷片热冲击实验 - 热弹性模拟部分
-# conda activate moose &&dos2unix PlaneStressCeramic.i&& mpirun -n 8 /home/yp/projects/fuel_rods/fuel_rods-opt -i PlaneStressCeramic.i
-#传统的展开写法
+# conda activate moose &&dos2unix 3D.i&& mpirun -n 8 /home/yp/projects/fuel_rods/fuel_rods-opt -i 3D.i
+
 [GlobalParams]
-  displacements = 'disp_x disp_y'
-  out_of_plane_strain = strain_zz
+  displacements = 'disp_x disp_y disp_z'
 []
 
 # 陶瓷材料参数
@@ -16,13 +15,15 @@ rho_ceramic = 3980      # 密度 (kg/m³)
 [Mesh]
   [gmg]
     type = GeneratedMeshGenerator
-    dim = 2
+    dim = 3
     nx = 50            # 25mm / 0.05mm = 500
     ny = 10            # 5mm / 0.05mm = 100
+    nz = 1            # 5mm / 0.05mm = 100
     xmax = 25e-3
     ymax = 5e-3
+    zmax = 0.5e-3
   []
-  [center_point]
+      [center_point]
     type = ExtraNodesetGenerator
     input = gmg
     coord = '0 0 0'
@@ -34,10 +35,10 @@ rho_ceramic = 3980      # 密度 (kg/m³)
   []
   [disp_y]
   []
+  [disp_z]
+  []
   [temp]
     initial_condition = 293.15
-  []
-  [strain_zz]
   []
 []
 
@@ -49,7 +50,7 @@ rho_ceramic = 3980      # 密度 (kg/m³)
 []
 
 [Kernels]
-  # 力学平衡
+  # 力学平衡（平面应变）
   [solid_x]
     type = ADStressDivergenceTensors
     variable = disp_x
@@ -60,10 +61,11 @@ rho_ceramic = 3980      # 密度 (kg/m³)
     variable = disp_y
     component = 1
   []
-  [./solid_z]
-    type = ADWeakPlaneStress
-    variable = strain_zz
-  [../]
+  [solid_z]
+    type = ADStressDivergenceTensors
+    variable = disp_z
+    component = 2
+  []
   
   # 热传导
   [heat_conduction]
@@ -86,30 +88,39 @@ rho_ceramic = 3980      # 密度 (kg/m³)
   []
 []
 [BCs]
+  # 力学边界条件 - 右侧对称面
   [symm_x]
-    type = ADDirichletBC
+    type = DirichletBC
     variable = disp_x
     boundary = center_point
     value = 0
   []
   [symm_y]
-    type = ADDirichletBC
+    type = DirichletBC
     variable = disp_y
     boundary = center_point
     value = 0
   []
+  [symm_z]
+    type = DirichletBC
+    variable = disp_z
+    boundary = center_point
+    value = 0
+  []
+  # # 热边界条件
   [left_temp]
-    type = ADDirichletBC
+    type = DirichletBC
     variable = temp
-    boundary = left
-    value = 293.15
+    boundary = 'left'
+    value = 293.15  # 水淬温度20°C
   []
   [right_temp]
-    type = ADDirichletBC
+    type = DirichletBC
     variable = temp
-    boundary = right
-    value = 1293.15
+    boundary = 'right'
+    value = 1293.15  # 水淬温度20°C
   []
+  # 右侧为绝热边界 - 不需要额外的边界条件
 []
 
 [Materials]
@@ -132,14 +143,13 @@ rho_ceramic = 3980      # 密度 (kg/m³)
     temperature = temp
   []
   [strain]
-    type = ADComputePlaneSmallStrain
+    type = ADComputeSmallStrain
     eigenstrain_names = thermal_eigenstrain
   []
   [stress]
     type = ADComputeLinearElasticStress
   []
 []
-
 [Postprocessors]
   [avg_temp]
     type = ElementAverageValue
@@ -176,8 +186,8 @@ rho_ceramic = 3980      # 密度 (kg/m³)
 [Outputs]
   exodus = true
   print_linear_residuals = false
-  [csv]
+    [csv]
     type = CSV
-    file_base = 'PlaneStressCeramic_post'
+    file_base = '3D'
   []
 []

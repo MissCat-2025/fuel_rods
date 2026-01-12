@@ -82,16 +82,20 @@ clone_moose() {
     # 定义多个克隆源
     declare -a clone_sources=(
         "https://gitee.com/mirrors/moose.git"
-        "https://github.com/idaholab/moose.git"
-        "https://hub.fastgit.xyz/idaholab/moose.git"
+        "https://gitclone.com/github.com/idaholab/moose.git"
         "https://github.com.cnpmjs.org/idaholab/moose.git"
+        "https://hub.fastgit.org/idaholab/moose.git"
+        "https://hub.fastgit.xyz/idaholab/moose.git"
+        "https://github.com/idaholab/moose.git"
     )
     
     declare -a source_names=(
         "Gitee镜像源（推荐）"
-        "GitHub官方源"
-        "FastGit镜像源"
+        "GitClone代理源"
         "CNPM镜像源"
+        "FastGit镜像源（org）"
+        "FastGit镜像源（xyz）"
+        "GitHub官方源"
     )
     
     local success=false
